@@ -1,1 +1,6 @@
+/bekko-api/target/
+/bekko-core/target/
+/bekko-ember-shared/target/
 /bekko-util/target/
+/bekko-xbee/target/
+/bekko-zcl/target/
