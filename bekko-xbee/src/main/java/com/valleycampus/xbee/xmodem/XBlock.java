@@ -24,56 +24,72 @@ import com.valleycampus.zigbee.io.FrameBuffer;
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
 public class XBlock implements Frame {
-    
-    public static final int DATA_SIZE = 128;
+
     public static final byte CTRL_Z = 0x1A;
-    private byte sequence;
+    public static final int DEFAULT_DATA_SIZE = 128;
+    public static final int EXTENDED_DATA_SIZE = 1024;
+    private int dataSize;
+    private int sequence;
     private byte[] data;
+    
+    public XBlock(boolean extended) {
+        dataSize = extended ? EXTENDED_DATA_SIZE : DEFAULT_DATA_SIZE;
+    }
 
     public void pull(FrameBuffer fb) {
-        fb.put(sequence);
-        fb.put((byte) (0xFF - sequence & 0xFF));
-        int dataLength = data.length;
-        if (dataLength > DATA_SIZE) {
-            dataLength = DATA_SIZE;
+        fb.putInt8(sequence);
+        fb.putInt8(0xFF - sequence & 0xFF);
+        int actualDataSize = data.length;
+        if (actualDataSize > dataSize) {
+            actualDataSize = dataSize;
         }
-        for (int i = 0; i < dataLength; i++) {
+        for (int i = 0; i < actualDataSize; i++) {
            fb.put(data[i]);
         }
-        for (int i = 0; i < (DATA_SIZE - dataLength); i++) {
+        for (int i = 0; i < (dataSize - actualDataSize); i++) {
            fb.put(CTRL_Z);
         }
     }
 
     public int quote() {
-        return 2 + DATA_SIZE;
+        return 2 + dataSize;
     }
 
     public void drain(FrameBuffer fb) {
-        this.sequence = fb.get();
-        byte seqSub = fb.get();
+        this.sequence = fb.getInt8();
+        int seqSub = fb.getInt8();
         if (((sequence & seqSub) & 0xFF) != 0) {
-            return;
+            // TODO: Invalid
         }
-        data = new byte[DATA_SIZE];
+        data = new byte[dataSize];
         fb.get(data);
-        int cs = 0;
-        for (int i = 0; i < DATA_SIZE; i++) {
-           cs += data[i];
-        }
     }
+    
+    /**
+     * @return the dataSize
+     */
+    public int getDataSize() {
+        return dataSize;
+    }
+
+    /**
+     * @param dataSize the dataSize to set
+     */
+    public void setDataSize(int dataSize) {
+        this.dataSize = dataSize;
+    } 
 
     /**
      * @return the sequence
      */
-    public byte getSequence() {
+    public int getSequence() {
         return sequence;
     }
 
     /**
      * @param sequence the sequence to set
      */
-    public void setSequence(byte sequence) {
+    public void setSequence(int sequence) {
         this.sequence = sequence;
     }
 
