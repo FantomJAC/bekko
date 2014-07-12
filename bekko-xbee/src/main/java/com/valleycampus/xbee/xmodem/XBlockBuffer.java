@@ -36,12 +36,8 @@ public class XBlockBuffer {
 		return rawDataBuffer.getPosition();
 	}
     
-    private int nextSequence() {
-        currentBlock++;
-        if (currentBlock > 0xFF) {
-            currentBlock = 0;
-        }
-        return currentBlock;
+    private int nextBlock() {
+		return (currentBlock + 1) & 0xFF;
     }
     
     public XBlock get(boolean extended) {
@@ -50,7 +46,8 @@ public class XBlockBuffer {
             return null;
         }
         XBlock xblock = new XBlock(extended);
-        xblock.setSequence(nextSequence());
+		currentBlock = nextBlock();
+        xblock.setSequence(currentBlock);
         int actualDataSize = xblock.getDataSize();
         if (remaining < actualDataSize) {
             actualDataSize = remaining;
@@ -62,11 +59,11 @@ public class XBlockBuffer {
     }
     
     public boolean put(XBlock block) {
-        if (block.getSequence() != (currentBlock + 1)) {
+        if (block.getSequence() != nextBlock()) {
             return false;
         }
         rawDataBuffer.put(block.getData(), 0, block.getDataSize());
-        nextSequence();
+		currentBlock = nextBlock();
         return true;
     }
 }
