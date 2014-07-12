@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.valleycampus.bekko</groupId>
     <artifactId>bekko</artifactId>
-    <version>14.6</version>
+    <version>14.12-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
         <module>bekko-api</module>
