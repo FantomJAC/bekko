@@ -39,6 +39,7 @@ public class XModem {
     public static final byte CAN = 0x18;
     public static final byte C = 0x43;	// 'C' which use in XModem/CRC
 	public static final int MAX_TIMEOUT = 90000;
+	private static final boolean DEBUG = false;
 
 	private InputStream is;
 	private OutputStream os;
@@ -93,7 +94,9 @@ public class XModem {
 						b == CAN ||
 						b == C
 					) {
-					System.out.println(">>" + ByteUtil.toHexString((byte) b));
+					if (DEBUG) {
+						System.out.println(">>" + ByteUtil.toHexString((byte) b));
+					}
 					return b & 0xFF;
 				}
 			}
@@ -105,6 +108,9 @@ public class XModem {
 	}
 	
 	public void sendByte(byte b) throws IOException {
+		if (DEBUG) {
+			System.out.println("<<" + ByteUtil.toHexString((byte) b));
+		}
 		os.write(b);
 		os.flush();
 	}
@@ -113,6 +119,9 @@ public class XModem {
 		XBlock block = new XBlock(extended);
 		int len = block.quote();
 		int r = is.read(readBuffer, 0, len + (crcMode ? 2 : 1));
+		if (DEBUG) {
+			Commons.printDev(readBuffer, 0, r, true);
+		}
 		block.drain(new FrameBuffer(readBuffer, 0, r));
 		int crc;
 		if (crcMode) {
@@ -135,10 +144,11 @@ public class XModem {
 		} else {
 			writeFrameBuffer.putInt8(crc);
 		}
-		// Send Buffer
-		Commons.printDev(writeFrameBuffer.getRawArray(),
-				writeFrameBuffer.getOffset(),
-				writeFrameBuffer.getPosition(), false);
+		if (DEBUG) {
+			Commons.printDev(writeFrameBuffer.getRawArray(),
+					writeFrameBuffer.getOffset(),
+					writeFrameBuffer.getPosition(), false);
+		}
 		os.write(writeFrameBuffer.getRawArray(),
 				writeFrameBuffer.getOffset(),
 				writeFrameBuffer.getPosition());
