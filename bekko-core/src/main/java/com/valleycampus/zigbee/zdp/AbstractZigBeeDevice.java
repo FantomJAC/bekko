@@ -50,6 +50,8 @@ public abstract class AbstractZigBeeDevice implements ZigBeeDevice {
 		this.dataService = dataService;
 
 		zdpContext = new ZDPContext(dataService);
+        dataService.addDataReceiver(zdpContext);
+        
 		discovery = new DiscoveryService(this, nwkMgr, zdpContext);
         zdpContext.registerZDPServerService(discovery);
 
