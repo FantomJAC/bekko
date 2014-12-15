@@ -20,6 +20,7 @@ import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.ZigBeeConst;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
 import com.valleycampus.zigbee.aps.DataService;
+import com.valleycampus.zigbee.io.Frame;
 import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import com.valleycampus.zigbee.zdo.NetworkManager;
 import com.valleycampus.zigbee.zdo.ZDPCommandPacket;
@@ -136,7 +137,15 @@ public abstract class AbstractZigBeeDevice implements ZigBeeDevice {
 		return discovery.removeDiscoveryListener(listener);
 	}
 
-	public ZDPCommandPacket sendZDPCommand(ZigBeeAddress address, short clusterId, ZDPCommand command, int txOptions, int radius, long timeout) throws IOException {
+    public int sendZDPCommand(ZigBeeAddress address, short clusterId, Frame command, int txOptions, int radius) throws IOException {
+        return zdpContext.sendCommand(address, clusterId, command, txOptions, radius, -1);
+    }
+
+	public ZDPCommandPacket sendZDPCommandAndWait(ZigBeeAddress address, short clusterId, Frame command, int txOptions, int radius, long timeout) throws IOException {
 		return zdpContext.sendCommandSync(address, clusterId, command, txOptions, radius, timeout);
+	}
+    
+    public ZDPCommandPacket sendZDPCommand(ZigBeeAddress address, short clusterId, ZDPCommand command, int txOptions, int radius, long timeout) throws IOException {
+		return sendZDPCommandAndWait(address, clusterId, command, txOptions, radius, timeout);
 	}
 }

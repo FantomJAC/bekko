@@ -22,6 +22,7 @@ import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.ZigBeeException;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
 import com.valleycampus.zigbee.aps.DataService;
+import com.valleycampus.zigbee.io.Frame;
 import com.valleycampus.zigbee.zdp.command.ZDPCommand;
 import java.io.IOException;
 
@@ -60,6 +61,25 @@ public interface ZigBeeDevice {
     
     public byte getNetworkStatus();
     
+    public int sendZDPCommand(
+            ZigBeeAddress address,
+            short clusterId,
+            Frame command,
+            int txOptions,
+            int radius) throws ZigBeeException, IOException;
+    
+    public ZDPCommandPacket sendZDPCommandAndWait(
+            ZigBeeAddress address,
+            short clusterId,
+            Frame command,
+            int txOptions,
+            int radius,
+            long timeout) throws ZigBeeException, IOException;
+    
+    /**
+     * @deprecated Use {@link #sendZDPCommandAndWait(com.valleycampus.zigbee.ZigBeeAddress,
+     * short, com.valleycampus.zigbee.io.Frame, int, int, long)} instead.
+     */
     public ZDPCommandPacket sendZDPCommand(
             ZigBeeAddress address,
             short clusterId,
