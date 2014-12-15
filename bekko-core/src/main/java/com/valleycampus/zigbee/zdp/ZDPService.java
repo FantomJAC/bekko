@@ -14,25 +14,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.valleycampus.zigbee.zdo;
+package com.valleycampus.zigbee.zdp;
 
-import com.valleycampus.zigbee.IEEEAddress;
-import com.valleycampus.zigbee.NetworkAddress;
-import com.valleycampus.zigbee.ZigBeeAddress;
+import com.valleycampus.zigbee.zdo.ZDPCommandPacket;
 
 /**
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public interface DiscoveryListener {
+public interface ZDPService {
 
-    public void deviceAnnounce(
-            NetworkAddress nwkAddress,
-            IEEEAddress ieeeAddress,
-            byte capability);
-	
-	public void deviceMatched(
-            int tsn,
-			ZigBeeAddress address,
-			NetworkAddress[] matchList);
+    public boolean handleZDPCommand(ZDPCommandPacket zdpCommand);
 }

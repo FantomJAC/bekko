@@ -26,6 +26,10 @@ import java.util.List;
  */
 public interface NetworkManager {
     
+	public static final int TYPE_COORDINATOR = 0x01;
+    public static final int TYPE_ROUTER = 0x02;
+    public static final int TYPE_END_DEVICE = 0x03;
+
     public void permitJoin(int pj) throws IOException;
     
     public List energyScan(int scanChannels, int scanDuration) throws IOException;
@@ -37,4 +41,6 @@ public interface NetworkManager {
     public void leaveNetwork() throws IOException;
     
     public NetworkAddress getNetworkAddress() throws IOException;
+    
+    public int getNodeType() throws IOException;
 }
