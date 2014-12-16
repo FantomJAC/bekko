@@ -16,19 +16,24 @@
  */
 package com.valleycampus.xbee.digimesh;
 
-import com.valleycampus.ember.shared.EmberDevice;
 import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeIO;
+import com.valleycampus.zigbee.IEEEAddress;
+import com.valleycampus.zigbee.NetworkAddress;
+import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.zdo.CommissioningManager;
+import com.valleycampus.zigbee.zdp.AbstractZigBeeDevice;
+import java.io.IOException;
 
 /**
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class DigiMeshDevice extends EmberDevice {
+public class DigiMeshDevice extends AbstractZigBeeDevice {
     
-    private XBeeIO xbIO;
-    private DigiMeshCommissioningManager commissioningManager;
+    private final XBeeIO xbIO;
+    private final DigiMeshCommissioningManager commissioningManager;
+    private IEEEAddress ieeeAddress = null;
     
     protected DigiMeshDevice(XBeeIO xbIO, DigiMeshNetworkManager nwkMgr, DigiMeshDataService dataService) {
         super(nwkMgr, dataService);
@@ -50,4 +55,26 @@ public class DigiMeshDevice extends EmberDevice {
         return commissioningManager;
     }
 
+    public IEEEAddress getIEEEAddress() {
+        if (ieeeAddress == null) {
+            try {
+                int[] addr64 = new int[2];
+                addr64[0] = xbIO.read32("SH");
+                addr64[1] = xbIO.read32("SL");
+                byte[] ieee = ByteUtil.BIG_ENDIAN.toByteArray(addr64, ByteUtil.INT_32_SIZE, 2);
+                ieeeAddress = IEEEAddress.getByAddress(ieee);
+            } catch (IOException ex) {
+                throw new IllegalAccessError("Can't Read PhysicalAddress." + ex);
+            }
+        }
+        return ieeeAddress;
+    }
+
+    public NetworkAddress lookupNodeIdByEui64(IEEEAddress eui64) throws IOException {
+        return NetworkAddress.BROADCAST_MROWI;
+    }
+
+    public IEEEAddress lookupEui64ByNodeId(NetworkAddress nodeId) throws IOException {
+        throw new IOException("Unsupported on the DigiMesh device.");
+    }
 }

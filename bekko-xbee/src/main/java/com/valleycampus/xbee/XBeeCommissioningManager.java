@@ -16,12 +16,11 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.ember.shared.EmberDevice;
-import com.valleycampus.ember.shared.EmberManagementEntity;
-import com.valleycampus.ember.shared.EmberNetworkManager;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
+import com.valleycampus.zigbee.aps.APSInformationBase;
 import com.valleycampus.zigbee.zdo.CommissioningManager;
+import com.valleycampus.zigbee.zdo.NetworkManager;
 import java.io.IOException;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -46,13 +45,13 @@ public class XBeeCommissioningManager implements CommissioningManager {
     public static final int SC_REJOIN = 0x02;
     public static final int SC_JOIN_ANY = 0x03;
     
-    private XBeeIO xbIO;
-    private XBeeNetworkManager nwkMgr;
-    private XBeeSecurityManager securityMgr;
-    private EmberManagementEntity mgmtEntity;
+    private final XBeeIO xbIO;
+    private final XBeeNetworkManager nwkMgr;
+    private final XBeeSecurityManager securityMgr;
+    private final APSInformationBase mgmtEntity;
     private Dictionary parameters;
     
-    public XBeeCommissioningManager(XBeeDevice zdo, EmberManagementEntity mgmtEntity) {
+    public XBeeCommissioningManager(XBeeDevice zdo, APSInformationBase mgmtEntity) {
         this.xbIO = zdo.getXBeeIO();
         this.nwkMgr = (XBeeNetworkManager) zdo.getNetworkManager();
         this.securityMgr = zdo.getSecurityManager();
@@ -72,9 +71,9 @@ public class XBeeCommissioningManager implements CommissioningManager {
         int sc = ((Integer) parameters.get(SAS_STARTUP_CONTROL)).intValue();
         switch (sc) {
         case SC_FORM:
-            mgmtEntity.setAIB(EmberManagementEntity.APS_DESIGNATED_COORDINATOR, Boolean.TRUE);
+            mgmtEntity.setAIB(APSInformationBase.APS_DESIGNATED_COORDINATOR, Boolean.TRUE);
             mgmtEntity.setAIB(
-                    EmberManagementEntity.APS_USE_EXTENDED_PAN_ID,
+                    APSInformationBase.APS_USE_EXTENDED_PAN_ID,
                     parameters.get(SAS_EXTENDED_PAN_ID));
             
             Object panId = parameters.get(SAS_PAN_ID);
@@ -84,13 +83,13 @@ public class XBeeCommissioningManager implements CommissioningManager {
             
             Object channelMask = parameters.get(SAS_CHANNEL_MASK);
             if (channelMask != null) {
-                mgmtEntity.setAIB(EmberManagementEntity.APS_CHANNEL_MASK, channelMask);
+                mgmtEntity.setAIB(APSInformationBase.APS_CHANNEL_MASK, channelMask);
             }
             
             Object trustCenterAddress = parameters.get(SAS_TRUST_CENTER_ADDRESS);
             if (trustCenterAddress != null) {
                 long addr = ((Long) trustCenterAddress).longValue();
-                mgmtEntity.setAIB(EmberManagementEntity.APS_TRUST_CENTER_ADDRESS, IEEEAddress.getByAddress(addr));
+                mgmtEntity.setAIB(APSInformationBase.APS_TRUST_CENTER_ADDRESS, IEEEAddress.getByAddress(addr));
             }
             break;
         default:
@@ -101,22 +100,22 @@ public class XBeeCommissioningManager implements CommissioningManager {
     }
     
     public void startupDevice() throws IOException {
-        EmberDevice.debug("Startup Procedure...");
+        XBeeDevice.debug("Startup Procedure...");
         
-        if (mgmtEntity.getAIBAsBoolean(EmberManagementEntity.APS_DESIGNATED_COORDINATOR)) {
-            if (nwkMgr.getNodeType() != EmberNetworkManager.TYPE_COORDINATOR) {
+        if (mgmtEntity.getAIBAsBoolean(APSInformationBase.APS_DESIGNATED_COORDINATOR)) {
+            if (nwkMgr.getNodeType() != NetworkManager.TYPE_COORDINATOR) {
                 throw new UnsupportedOperationException("The firmware on this XBee is not Coordinator.");
             }
-            EmberDevice.debug("Designated Coordainator");
+            XBeeDevice.debug("Designated Coordainator");
             // Request forming
             xbIO.setQueueing(true);
-            xbIO.write64("ID", mgmtEntity.getAIBAsLong(EmberManagementEntity.APS_USE_EXTENDED_PAN_ID));
-            xbIO.write16("SC", mgmtEntity.getAIBAsInteger(EmberManagementEntity.APS_CHANNEL_MASK) >>> 11);
+            xbIO.write64("ID", mgmtEntity.getAIBAsLong(APSInformationBase.APS_USE_EXTENDED_PAN_ID));
+            xbIO.write16("SC", mgmtEntity.getAIBAsInteger(APSInformationBase.APS_CHANNEL_MASK) >>> 11);
             xbIO.write8("SD", DEFAULT_SCAN_DURATION);
             if (DEFAULT_SECURITY_LEVEL > 0) {
-                EmberDevice.debug("Security Level: " + DEFAULT_SECURITY_LEVEL);
+                XBeeDevice.debug("Security Level: " + DEFAULT_SECURITY_LEVEL);
                 SecurityInfo securityInfo = new SecurityInfo();
-                Object tc = mgmtEntity.getAIB(EmberManagementEntity.APS_TRUST_CENTER_ADDRESS);
+                Object tc = mgmtEntity.getAIB(APSInformationBase.APS_TRUST_CENTER_ADDRESS);
                 if (tc != null && !tc.equals(nwkMgr.getIEEEAddress())) {
                     throw new UnsupportedOperationException("Setting TC as non-coordinator is not supported on XBee.");
                 }
@@ -127,7 +126,7 @@ public class XBeeCommissioningManager implements CommissioningManager {
                 securityInfo.setLinkKey(HA_TC_LINK_KEY);
                 securityMgr.initSecurity(securityInfo);
             } else {
-                EmberDevice.debug("No Security");
+                XBeeDevice.debug("No Security");
             }
             Object zs = parameters.get(SAS_STACK_PROFILE);
             if (zs == null) {
@@ -142,13 +141,13 @@ public class XBeeCommissioningManager implements CommissioningManager {
             return;
         }
         
-        long extPanId = mgmtEntity.getAIBAsLong(EmberManagementEntity.APS_USE_EXTENDED_PAN_ID);
+        long extPanId = mgmtEntity.getAIBAsLong(APSInformationBase.APS_USE_EXTENDED_PAN_ID);
         if (extPanId != 0) {
-            EmberDevice.debug("apsUseExtendedPANID has a non-zero value");
-            EmberDevice.debug("TODO: Rejoin attempt");
+            XBeeDevice.debug("apsUseExtendedPANID has a non-zero value");
+            XBeeDevice.debug("TODO: Rejoin attempt");
         } else {
-            EmberDevice.debug("apsUseExtendedPANID is equals to 0x0000000000000000");
-            EmberDevice.debug("TODO: Join any attempt");
+            XBeeDevice.debug("apsUseExtendedPANID is equals to 0x0000000000000000");
+            XBeeDevice.debug("TODO: Join any attempt");
         }
     }
 }

@@ -51,10 +51,10 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
     public static final short DIGI_CLUSTER_ID = (short) 0x0011;
     public static final int DIGI_ENDPOINT = 0xE8;
     
-    private XBeeNetworkManager nwkMgr;
-    private XBeeBindingManager bindingMgr;
-    private XBeeAPI xbAPI;
-    private List listenerList;
+    private final XBeeNetworkManager nwkMgr;
+    private final XBeeBindingManager bindingMgr;
+    private final XBeeAPI xbAPI;
+    private final List listenerList;
     
     public XBeeDataService(XBeeNetworkManager nwkMgr, XBeeBindingManager bindingMgr, XBeeAPI xbDevice) {
         this.nwkMgr = nwkMgr;
@@ -96,10 +96,10 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
         if (tx.getAddress64() != XBeeAddressingRequest.XBEE_BROADCAST64 &&
              tx.getAddress16() == XBeeAddressingRequest.XBEE_BROADCAST16) {
             // Keep a resolved address to the local address table.
-            nwkMgr.updateAddressMap(
+            nwkMgr.update(
                     IEEEAddress.getByAddress(tx.getAddress64()),
                     NetworkAddress.getByAddress(resp.getAddress16()),
-                    false);
+                    -1);
         }
     }
     
@@ -162,7 +162,7 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
             IEEEAddress eui64 = IEEEAddress.getByAddress(indicator.getAddress64());
             NetworkAddress nwk = NetworkAddress.getByAddress(indicator.getAddress16());
             // Keep updated the local address table.
-            nwkMgr.updateAddressMap(eui64, nwk, false);
+            nwkMgr.update(eui64, nwk, -1);
             if ((indicator instanceof ZigBeeExplicitRxIndicator) || (indicator instanceof ZigBeeReceivePacket)) {
                 DataIndication dataIndication = new DataIndication();
                 if (indicator.getAddress64() != XBeeAddressingIndicator.XBEE_UNKNOWN64) {

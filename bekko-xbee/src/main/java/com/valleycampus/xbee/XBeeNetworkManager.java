@@ -16,28 +16,29 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.ember.shared.EmberNetworkManager;
 import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
+import com.valleycampus.zigbee.io.ByteUtil;
+import com.valleycampus.zigbee.zdo.NetworkManager;
+import com.valleycampus.zigbee.zdp.AddressTable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import com.valleycampus.zigbee.io.ByteUtil;
 
 /**
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class XBeeNetworkManager implements EmberNetworkManager {
+public class XBeeNetworkManager implements NetworkManager, AddressTable {
     
-    private Map addressMap;
+    private final Map addressMap;
     private final Object addressLock = new Object();
-    private XBeeIO xbIO;
+    private final XBeeIO xbIO;
     private IEEEAddress ieeeAddress = null;
     
     public XBeeNetworkManager(XBeeIO xbIO) {
@@ -45,7 +46,7 @@ public class XBeeNetworkManager implements EmberNetworkManager {
         addressMap = new HashMap();
     }
     
-    public void updateAddressMap(IEEEAddress address64, NetworkAddress address16, boolean sleepyAnnounce) {
+    public void update(IEEEAddress address64, NetworkAddress address16, int capability) {
         synchronized (addressLock) {
             addressMap.put(address64, address16);
         }
@@ -141,7 +142,7 @@ public class XBeeNetworkManager implements EmberNetworkManager {
         case XBeeAPI.VR_END_DEVICE:
             return TYPE_END_DEVICE;
         default:
-            return TYPE_UNKNOWN;
+            return -1;
         }
     }
 }

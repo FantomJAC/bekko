@@ -16,12 +16,11 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.ember.shared.EmberDevice;
-import com.valleycampus.ember.shared.ZDPContext;
 import com.valleycampus.xbee.api.XBeeDriver;
 import com.valleycampus.zigbee.zdo.ZigBeeDevice;
 import java.io.IOException;
 import com.valleycampus.zigbee.apl.BekkoDeviceManager;
+import com.valleycampus.zigbee.zdp.ZDPContext;
 
 /**
  *
@@ -29,19 +28,19 @@ import com.valleycampus.zigbee.apl.BekkoDeviceManager;
  */
 public class XBeeDeviceManager implements BekkoDeviceManager {
 
-    private DriverManager drvMgr = new DriverManager();
+    private final DriverManager drvMgr = new DriverManager();
     
     public ZigBeeDevice createSharedZigBeeDevice() throws IOException {
         if (Boolean.getBoolean(XBeeDevice.DEBUG_ZNET)) {
-            EmberDevice.setDebugEnabled(true);
+            XBeeDevice.setDebugEnabled(true);
         }
-        if (Boolean.getBoolean(XBeeDevice.DEBUG_XBEE)) {
+        if (Boolean.getBoolean(XBeeDevice.DEBUG_XBEE_DRIVER)) {
             XBeeDriver.setDebugEnabled(true);
-            if (Boolean.getBoolean(XBeeDevice.TRACE_XBEE)) {
+            if (Boolean.getBoolean(XBeeDevice.TRACE_XBEE_DRIVER)) {
                 XBeeDriver.setTraceEnabled(true);
             }
         }
-        if (Boolean.getBoolean(EmberDevice.DEBUG_ZDP)) {
+        if (Boolean.getBoolean(XBeeDevice.DEBUG_ZDP)) {
             ZDPContext.setDebugEnabled(true);
         }
 

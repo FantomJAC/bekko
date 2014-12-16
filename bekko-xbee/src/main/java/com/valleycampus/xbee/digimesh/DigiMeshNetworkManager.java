@@ -16,22 +16,20 @@
  */
 package com.valleycampus.xbee.digimesh;
 
-import com.valleycampus.ember.shared.EmberNetworkManager;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
+import com.valleycampus.zigbee.zdo.NetworkManager;
 import java.io.IOException;
 import java.util.List;
-import com.valleycampus.zigbee.io.ByteUtil;
 
 /**
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class DigiMeshNetworkManager implements EmberNetworkManager {
+public class DigiMeshNetworkManager implements NetworkManager {
     
-    private XBeeIO xbIO;
-    private IEEEAddress ieeeAddress = null;
+    private final XBeeIO xbIO;
     
     public DigiMeshNetworkManager(XBeeIO xbIO) {
         this.xbIO = xbIO;
@@ -39,33 +37,6 @@ public class DigiMeshNetworkManager implements EmberNetworkManager {
     
     public void aggregateRouteRequest(IEEEAddress address) throws IOException {
         xbIO.write64("AG", address.toLong());
-    }
-
-    public NetworkAddress lookupNodeIdByEui64(IEEEAddress eui64) throws IOException {
-        return NetworkAddress.BROADCAST_MROWI;
-    }
-
-    public IEEEAddress lookupEui64ByNodeId(NetworkAddress nodeId) throws IOException {
-        throw new IOException("Unsupported on the DigiMesh device.");
-    }
-
-    public void updateAddressMap(IEEEAddress senderEUI64, NetworkAddress sender, boolean sleepyAnnounce) {
-        // Nothing.
-    }
-
-    public IEEEAddress getIEEEAddress() {
-        if (ieeeAddress == null) {
-            try {
-                int[] addr64 = new int[2];
-                addr64[0] = xbIO.read32("SH");
-                addr64[1] = xbIO.read32("SL");
-                byte[] ieee = ByteUtil.BIG_ENDIAN.toByteArray(addr64, ByteUtil.INT_32_SIZE, 2);
-                ieeeAddress = IEEEAddress.getByAddress(ieee);
-            } catch (IOException ex) {
-                throw new IllegalAccessError("Can't Read PhysicalAddress." + ex);
-            }
-        }
-        return ieeeAddress;
     }
 
     public NetworkAddress getNetworkAddress() throws IOException {
