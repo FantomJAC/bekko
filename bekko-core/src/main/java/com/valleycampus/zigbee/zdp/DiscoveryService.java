@@ -38,6 +38,7 @@ import com.valleycampus.zigbee.service.ServiceTask;
 import com.valleycampus.zigbee.util.ArrayFifoQueue;
 import com.valleycampus.zigbee.zdo.NetworkManager;
 import com.valleycampus.zigbee.zdo.ZigBeeDevice;
+import com.valleycampus.zigbee.zdp.command.AddrRsp;
 
 /**
  *
@@ -167,6 +168,19 @@ public class DiscoveryService implements ZDPService, Service {
                             zdpCommand.getTsn(),
                             zdpCommand.getRemoteAddress(),
                             matchList);
+                }
+            }
+            return true;
+        case ZDPCommand.ZDP_NWK_ADDR_RSP:
+        case ZDPCommand.ZDP_IEEE_ADDR_RSP:
+            AddrRsp addrRsp = new AddrRsp();
+            addrRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
+            synchronized (listenerLock) {
+                // We actually indicate to listeners 'synchronous'
+                // All listeners should NOT block at the methods.
+                for (int i = 0; i < listenerList.size(); i++) {
+                    ((DiscoveryListener) listenerList.get(i)).deviceDiscovered(
+                            addrRsp.getIEEEAddress(), addrRsp.getNetworkAddress());
                 }
             }
             return true;

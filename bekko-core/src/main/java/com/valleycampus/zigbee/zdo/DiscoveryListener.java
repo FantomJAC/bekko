@@ -35,4 +35,8 @@ public interface DiscoveryListener {
             int tsn,
 			ZigBeeAddress address,
 			NetworkAddress[] matchList);
+    
+    public void deviceDiscovered(
+            IEEEAddress ieeeAddress,
+            NetworkAddress nwkAddress);
 }
