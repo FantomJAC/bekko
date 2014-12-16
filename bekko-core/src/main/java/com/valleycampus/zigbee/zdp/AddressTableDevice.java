@@ -18,7 +18,6 @@ package com.valleycampus.zigbee.zdp;
 
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
-import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.aps.DataService;
 import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import com.valleycampus.zigbee.zdo.NetworkManager;
@@ -51,7 +50,7 @@ public abstract class AddressTableDevice extends AbstractZigBeeDevice implements
         addrTable.update(ieeeAddress, nwkAddress, (capability & 0xFF));
     }
 
-    public void deviceMatched(int tsn, ZigBeeAddress address, NetworkAddress[] matchList) { }
+    public void deviceMatched(int tsn, NetworkAddress nwkAddress, int[] matchList) { }
 
     public void deviceDiscovered(IEEEAddress ieeeAddress, NetworkAddress nwkAddress) {
         addrTable.update(ieeeAddress, nwkAddress, -1);

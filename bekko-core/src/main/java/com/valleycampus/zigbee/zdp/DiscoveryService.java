@@ -155,19 +155,16 @@ public class DiscoveryService implements ZDPService, Service {
         case ZDPCommand.ZDP_MATCH_DESC_RSP:
             MatchDescRsp matchDescRsp = new MatchDescRsp();
             matchDescRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
-            final NetworkAddress[] matchList = new NetworkAddress[matchDescRsp.getMatchLength()];
-            for (int i = 0; i < matchList.length; i++) {
-                matchList[i] = NetworkAddress.getByAddress(
-                        (short) matchDescRsp.getMatchList()[i]);
-            }
-            synchronized (listenerLock) {
-                // We actually indicate to listeners 'synchronous'
-                // All listeners should NOT block at the methods.
-                for (int i = 0; i < listenerList.size(); i++) {
-                    ((DiscoveryListener) listenerList.get(i)).deviceMatched(
-                            zdpCommand.getTsn(),
-                            zdpCommand.getRemoteAddress(),
-                            matchList);
+            if (matchDescRsp.getStatus() == ZDPCommand.STATUS_SUCCESS) {
+                synchronized (listenerLock) {
+                    // We actually indicate to listeners 'synchronous'
+                    // All listeners should NOT block at the methods.
+                    for (int i = 0; i < listenerList.size(); i++) {
+                        ((DiscoveryListener) listenerList.get(i)).deviceMatched(
+                                zdpCommand.getTsn(),
+                                matchDescRsp.getNetworkAddr(),
+                                matchDescRsp.getMatchList());
+                    }
                 }
             }
             return true;
@@ -175,12 +172,14 @@ public class DiscoveryService implements ZDPService, Service {
         case ZDPCommand.ZDP_IEEE_ADDR_RSP:
             AddrRsp addrRsp = new AddrRsp();
             addrRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
-            synchronized (listenerLock) {
-                // We actually indicate to listeners 'synchronous'
-                // All listeners should NOT block at the methods.
-                for (int i = 0; i < listenerList.size(); i++) {
-                    ((DiscoveryListener) listenerList.get(i)).deviceDiscovered(
-                            addrRsp.getIEEEAddress(), addrRsp.getNetworkAddress());
+            if (addrRsp.getStatus() == ZDPCommand.STATUS_SUCCESS) {
+                synchronized (listenerLock) {
+                    // We actually indicate to listeners 'synchronous'
+                    // All listeners should NOT block at the methods.
+                    for (int i = 0; i < listenerList.size(); i++) {
+                        ((DiscoveryListener) listenerList.get(i)).deviceDiscovered(
+                                addrRsp.getIEEEAddress(), addrRsp.getNetworkAddress());
+                    }
                 }
             }
             return true;

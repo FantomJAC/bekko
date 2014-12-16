@@ -18,7 +18,6 @@ package com.valleycampus.zigbee.zdo;
 
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
-import com.valleycampus.zigbee.ZigBeeAddress;
 
 /**
  *
@@ -33,8 +32,8 @@ public interface DiscoveryListener {
 	
 	public void deviceMatched(
             int tsn,
-			ZigBeeAddress address,
-			NetworkAddress[] matchList);
+			NetworkAddress nwkAddress,
+			int[] matchList);
     
     public void deviceDiscovered(
             IEEEAddress ieeeAddress,
