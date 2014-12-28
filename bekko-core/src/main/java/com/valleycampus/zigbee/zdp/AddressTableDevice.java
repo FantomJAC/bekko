@@ -47,12 +47,14 @@ public abstract class AddressTableDevice extends AbstractZigBeeDevice implements
     }
 
     public void deviceAnnounce(NetworkAddress nwkAddress, IEEEAddress ieeeAddress, byte capability) {
+        ZDPContext.debug("Address table updated (DeviceAnnounce): eui64=" + ieeeAddress.toString() + ", nwk=" + nwkAddress.toString());
         addrTable.update(ieeeAddress, nwkAddress, (capability & 0xFF));
     }
 
     public void deviceMatched(int tsn, NetworkAddress nwkAddress, int[] matchList) { }
 
     public void deviceDiscovered(IEEEAddress ieeeAddress, NetworkAddress nwkAddress) {
+        ZDPContext.debug("Address table updated (Discovered): eui64=" + ieeeAddress.toString() + ", nwk=" + nwkAddress.toString());
         addrTable.update(ieeeAddress, nwkAddress, -1);
     }
     

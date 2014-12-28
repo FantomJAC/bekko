@@ -19,6 +19,7 @@ package com.valleycampus.zigbee.zdp;
 import com.valleycampus.zigbee.GroupAddress;
 import com.valleycampus.zigbee.NetworkAddress;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
+import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import com.valleycampus.zigbee.zdp.command.DeviceAnnounce;
 import com.valleycampus.zigbee.zdp.command.MatchDescReq;
@@ -88,7 +89,10 @@ public class DiscoveryService implements ZDPService, Service {
      */
     protected static boolean isMatch(MatchDescReq matchDescReq, ZigBeeSimpleDescriptor simpleDescriptor) {
         if (matchDescReq.getProfileID() != simpleDescriptor.getApplicationProfileIdentifier()) {
-            // ProfileID dose not match.
+            // TODO: Check if the id matches wildcard=0xffff
+            ZDPContext.debug("[Match] Profile does not match: req="
+                    + ByteUtil.toHexString(matchDescReq.getProfileID())
+                    + " vs target=" + ByteUtil.toHexString(simpleDescriptor.getApplicationProfileIdentifier()));
             return false;
         }
         int matchNumIn = matchDescReq.getInClusterList().length;
@@ -96,6 +100,7 @@ public class DiscoveryService implements ZDPService, Service {
         if (matchNumIn == 0 && matchNumOut == 0) {
             // No Input/Output clusters are provided.
             // As described in 2.5.2.2, in this case we consider as matched.
+            ZDPContext.debug("[Match] No in/out clusters are specified");
             return true;
         }
         
@@ -106,6 +111,7 @@ public class DiscoveryService implements ZDPService, Service {
                 for (int a = 0; a < appNumIn; a++) {
                     short appCluster = simpleDescriptor.getApplicationInputClusterList()[a];
                     if (matchCluster == appCluster) {
+                        ZDPContext.debug("[Match] Input cluster is matched: cluster=" + ByteUtil.toHexString(appCluster));
                         return true;
                     }
                 }
@@ -118,12 +124,14 @@ public class DiscoveryService implements ZDPService, Service {
                 for (int a = 0; a < appNumOut; a++) {
                     short appCluster = simpleDescriptor.getApplicationOutputClusterList()[a];
                     if (matchCluster == appCluster) {
+                        ZDPContext.debug("[Match] Output cluster is matched cluster=" + ByteUtil.toHexString(appCluster));
                         return true;
                     }
                 }
             }
         }
         
+        ZDPContext.debug("[Match] No match");
         return false;
     }
 
@@ -278,6 +286,7 @@ public class DiscoveryService implements ZDPService, Service {
         int matchLength = 0;
         for (int i = 0; i < endpoints.length; i++) {
             int endpoint = endpoints[i];
+            ZDPContext.debug("[Match] Applying criteria on endpoint " + endpoint);
             if (isMatch(matchDescReq, zdo.getSimpleDescriptor(endpoint))) {
                 matchList[matchLength++] = endpoint;
             }
@@ -295,6 +304,7 @@ public class DiscoveryService implements ZDPService, Service {
         // Apply the match criterion to local simple descriptors,
         // if the NwkAddrOf interest equals to local address or is broadcast.
         if (nwkAddr.equals(localAddr) || nwkAddr.isBroadcast()) {
+            ZDPContext.debug("[Match] Applying criteria on local device");
             int[] endpoints = zdo.getActiveEndpoints();
             int[] matchList = new int[endpoints.length];
             int matchLength = isMatch(matchDescReq, endpoints, matchList);
@@ -354,6 +364,7 @@ public class DiscoveryService implements ZDPService, Service {
             if (command == null) {
                 return;
             }
+            ZDPContext.debug("ZDODiscovery command dispatch");
             ZDPCommandPacket commandPacket = (ZDPCommandPacket) command;
             try {
                 switch (commandPacket.getClusterId()) {
