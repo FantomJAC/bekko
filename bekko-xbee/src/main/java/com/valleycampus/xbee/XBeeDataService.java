@@ -51,10 +51,10 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
     public static final short DIGI_CLUSTER_ID = (short) 0x0011;
     public static final int DIGI_ENDPOINT = 0xE8;
     
-    private XBeeNetworkManager nwkMgr;
-    private XBeeBindingManager bindingMgr;
-    private XBeeAPI xbAPI;
-    private List listenerList;
+    private final XBeeNetworkManager nwkMgr;
+    private final XBeeBindingManager bindingMgr;
+    private final XBeeAPI xbAPI;
+    private final List listenerList;
     
     public XBeeDataService(XBeeNetworkManager nwkMgr, XBeeBindingManager bindingMgr, XBeeAPI xbDevice) {
         this.nwkMgr = nwkMgr;
@@ -96,10 +96,10 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
         if (tx.getAddress64() != XBeeAddressingRequest.XBEE_BROADCAST64 &&
              tx.getAddress16() == XBeeAddressingRequest.XBEE_BROADCAST16) {
             // Keep a resolved address to the local address table.
-            nwkMgr.updateAddressMap(
+            nwkMgr.update(
                     IEEEAddress.getByAddress(tx.getAddress64()),
                     NetworkAddress.getByAddress(resp.getAddress16()),
-                    false);
+                    -1);
         }
     }
     
@@ -121,6 +121,7 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
         } else {
             NetworkAddress nwk = (NetworkAddress) address;
             if (nwk.isBroadcast()) {
+                tx.setAddress16(XBeeAddressingRequest.XBEE_BROADCAST16);
                 tx.setAddress64(XBeeAddressingRequest.XBEE_BROADCAST64);
             } else {
                 // For XBee, we must provide EUI64 when send unicast.
@@ -128,9 +129,9 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
                 if (eui64 == null) {
                     throw new IOException("Can't resolve NWK. (EUI64 not found in local address table.)");
                 }
+                tx.setAddress16(nwk.toShort());
                 tx.setAddress64(eui64.toLong());
             }
-            tx.setAddress16(nwk.toShort());
         }
         tx.setProfileId(request.getProfileId());
         tx.setClusterId(request.getClusterId());
@@ -162,7 +163,7 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
             IEEEAddress eui64 = IEEEAddress.getByAddress(indicator.getAddress64());
             NetworkAddress nwk = NetworkAddress.getByAddress(indicator.getAddress16());
             // Keep updated the local address table.
-            nwkMgr.updateAddressMap(eui64, nwk, false);
+            nwkMgr.update(eui64, nwk, -1);
             if ((indicator instanceof ZigBeeExplicitRxIndicator) || (indicator instanceof ZigBeeReceivePacket)) {
                 DataIndication dataIndication = new DataIndication();
                 if (indicator.getAddress64() != XBeeAddressingIndicator.XBEE_UNKNOWN64) {
@@ -170,6 +171,8 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
                 } else {
                     dataIndication.setSourceAddress(nwk);
                 }
+                
+                final boolean broadcast;
                 if (indicator instanceof ZigBeeExplicitRxIndicator) {
                     ZigBeeExplicitRxIndicator rx = (ZigBeeExplicitRxIndicator) indicator;
                     dataIndication.setClusterId(rx.getClusterId());
@@ -177,6 +180,7 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
                     dataIndication.setSourceEndpoint(rx.getSourceEndpoint());
                     dataIndication.setDestinationEndpoint(rx.getDestinationEndpoint());
                     dataIndication.setPayload(rx.getPayload());
+                    broadcast = ((rx.getReceiveOptions() & ZigBeeExplicitRxIndicator.BROADCAST_PACKET) > 0);
                 } else {
                     ZigBeeReceivePacket rx = (ZigBeeReceivePacket) indicator;
                     dataIndication.setClusterId(DIGI_CLUSTER_ID);
@@ -184,7 +188,11 @@ public class XBeeDataService implements XBeeAPIListener, DataService {
                     dataIndication.setSourceEndpoint(DIGI_ENDPOINT);
                     dataIndication.setDestinationEndpoint(DIGI_ENDPOINT);
                     dataIndication.setPayload(rx.getPacket());
+                    broadcast = ((rx.getReceiveOptions() & 0x02) > 0);
                 }
+                dataIndication.setDestinationAddress(broadcast ?
+                        NetworkAddress.BROADCAST_MROWI :
+                        null); // FIXME: Should be my network address
                 // TODO
                 //dataIndication.setLinkQuality(linkQuality);
                 dataIndication.setSecurityStatus(ZigBeeConst.UNSECURED);    // FIXME

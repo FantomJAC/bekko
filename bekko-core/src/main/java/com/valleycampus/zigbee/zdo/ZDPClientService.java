@@ -223,6 +223,7 @@ public class ZDPClientService {
             int startIndex)
             throws IOException {
         AddrReq ieeeAddrReq = new AddrReq(AddrReq.REQ_IEEE);
+        ensureUnicast(target);
         ieeeAddrReq.setAddress(target);
         ieeeAddrReq.setRequestType(
                 extResponse ?
@@ -246,11 +247,8 @@ public class ZDPClientService {
             short[] inClusterList,
             short[] outClusterList) throws IOException {
         MatchDescReq matchDescReq = new MatchDescReq();
-        if (target == null) {
-            matchDescReq.setNetworkAddr(NetworkAddress.BROADCAST_MROWI);
-        } else {
-            matchDescReq.setNetworkAddr(target);
-        }
+        ensureUnicast(target);
+        matchDescReq.setNetworkAddr(target);
         matchDescReq.setProfileID(profileId);
         matchDescReq.setInClusterList(inClusterList);
         matchDescReq.setOutClusterList(outClusterList);

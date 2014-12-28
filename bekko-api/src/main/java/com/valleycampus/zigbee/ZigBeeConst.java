@@ -44,6 +44,7 @@ public interface ZigBeeConst {
     public static final short PROFILE_ZDP = (short) 0x0000;
     public static final short PROFILE_HA = (short) 0x0104;
     public static final short PROFILE_SE = (short) 0x0109;
+    public static final short PROFILE_WILDCARD = (short) 0xFFFF;
     public static final int ZDO_ENDPOINT = 0;
     public static final int BRODCAST_ENDPOINT = 0xFF;
 }

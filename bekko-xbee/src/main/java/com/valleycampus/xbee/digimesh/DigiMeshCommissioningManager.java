@@ -16,7 +16,6 @@
  */
 package com.valleycampus.xbee.digimesh;
 
-import com.valleycampus.ember.shared.EmberDevice;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.zdo.CommissioningManager;
 import java.io.IOException;
@@ -48,7 +47,6 @@ public class DigiMeshCommissioningManager implements CommissioningManager {
     public void commission() throws IOException {
         Object panId = parameters.get(SAS_PAN_ID);
         if (panId != null) {
-            EmberDevice.debug("Update Network ID");
             xbIO.write16("ID", ((Number) panId).shortValue());
             xbIO.write();
         }

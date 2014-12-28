@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.valleycampus.ember.shared;
+package com.valleycampus.zigbee.zdp;
 
 import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.ZigBeeConst;
@@ -44,10 +44,10 @@ public final class ZDPContext implements DataReceiver {
             ZigBeeDataConnection.OPTION_ACK |
             ZigBeeDataConnection.OPTION_FRAGMENTATION;
     //      DataRequest.EXT_OPTION_SOURCE_EUI64;
-    private DataService dataService;
-    private ArrayList serverList;
-    private Sequence transactionSequence;
-    private LinkedList transactionList;
+    private final DataService dataService;
+    private final ArrayList serverList;
+    private final Sequence transactionSequence;
+    private final LinkedList transactionList;
     private static PrintStream logStream = System.out;
     private static volatile boolean debugEnabled;
     
@@ -56,7 +56,6 @@ public final class ZDPContext implements DataReceiver {
         serverList = new ArrayList();
         transactionSequence = new Sequence(8);
         transactionList = new LinkedList();
-        dataService.addDataReceiver(this);
     }
     
     public static void setLogStream(PrintStream logStream) {
@@ -71,6 +70,10 @@ public final class ZDPContext implements DataReceiver {
         if (debugEnabled) {
             logStream.println("[ZDP#debug] " + s);
         }
+    }
+    
+    protected static void warn(String s) {
+        logStream.println("[ZDP#warn] " + s);
     }
     
     protected static void debug(ZDPCommandPacket zdpPacket, boolean resp) {

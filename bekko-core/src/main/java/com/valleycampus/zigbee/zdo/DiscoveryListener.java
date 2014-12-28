@@ -29,4 +29,13 @@ public interface DiscoveryListener {
             NetworkAddress nwkAddress,
             IEEEAddress ieeeAddress,
             byte capability);
+	
+	public void deviceMatched(
+            int tsn,
+			NetworkAddress nwkAddress,
+			int[] matchList);
+    
+    public void deviceDiscovered(
+            IEEEAddress ieeeAddress,
+            NetworkAddress nwkAddress);
 }

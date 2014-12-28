@@ -16,11 +16,11 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.ember.shared.EmberDevice;
 import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeDriver;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.xbee.digimesh.DigiMeshDevice;
+import com.valleycampus.zigbee.zdo.ZigBeeDevice;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class DriverManager {
     private SerialPort comPort;
     private XBeeDriver driver;
     
-    public EmberDevice openDriver(String portName) throws Exception {
+    public ZigBeeDevice openDriver(String portName) throws Exception {
         CommPortIdentifier comId = CommPortIdentifier.getPortIdentifier(portName);
         comPort = (SerialPort) comId.open(XBeeDriver.class.getName(), 0);
         comPort.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
@@ -43,7 +43,7 @@ public class DriverManager {
                 comPort.getInputStream(),
                 comPort.getOutputStream());
         driver.activate();
-        return createEmberDevice(driver);
+        return createZigBeeDevice(driver);
     }
     
     public void closeDriver() throws IOException {
@@ -51,7 +51,7 @@ public class DriverManager {
         comPort.close();
     }
     
-    private static EmberDevice createEmberDevice(XBeeAPI xbAPI) throws IOException {
+    private static ZigBeeDevice createZigBeeDevice(XBeeAPI xbAPI) throws IOException {
         XBeeIO xbIO = new XBeeIO(xbAPI);
         xbIO.setTimeout(3000);
 
@@ -62,12 +62,12 @@ public class DriverManager {
         case XBeeAPI.HV_S2B_PRO:
         case 0x2100:
         case 0x2200:
-            EmberDevice.debug("ZigBee(S2) device is detected.");
+            XBeeDevice.debug("ZigBee(S2) device is detected.");
             return XBeeDevice.createXBeeDevice(xbAPI);
         case 0x2300:
-            EmberDevice.debug("DigiMesh(S3) device is detected.");
+            XBeeDevice.debug("DigiMesh(S3) device is detected.");
         case 0x2400:
-            EmberDevice.debug("DigiMesh(S8) device is detected.");
+            XBeeDevice.debug("DigiMesh(S8) device is detected.");
             return DigiMeshDevice.createDigiMeshDevice(xbAPI);
         default:
             throw new IOException("Module " + Integer.toHexString(hv) + " not support ZigBee");

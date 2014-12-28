@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.valleycampus.ember.shared;
+package com.valleycampus.zigbee.zdp;
 
 import com.valleycampus.zigbee.GroupAddress;
 import com.valleycampus.zigbee.NetworkAddress;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
+import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import com.valleycampus.zigbee.zdp.command.DeviceAnnounce;
 import com.valleycampus.zigbee.zdp.command.MatchDescReq;
 import com.valleycampus.zigbee.zdp.command.MatchDescRsp;
 import com.valleycampus.zigbee.zdo.ZDPCommandPacket;
 import com.valleycampus.zigbee.zdp.command.ActiveEpRsp;
-import com.valleycampus.zigbee.zdp.command.AddrRsp;
 import com.valleycampus.zigbee.zdp.command.DescReq;
 import com.valleycampus.zigbee.zdp.command.SimpleDescReq;
 import com.valleycampus.zigbee.zdp.command.SimpleDescRsp;
@@ -37,28 +37,28 @@ import java.util.List;
 import com.valleycampus.zigbee.service.Service;
 import com.valleycampus.zigbee.service.ServiceTask;
 import com.valleycampus.zigbee.util.ArrayFifoQueue;
+import com.valleycampus.zigbee.zdo.NetworkManager;
+import com.valleycampus.zigbee.zdo.ZigBeeDevice;
+import com.valleycampus.zigbee.zdp.command.AddrRsp;
 
 /**
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class EmberDiscovery implements ZDPService, Service {
+public class DiscoveryService implements ZDPService, Service {
     
     public static final int DISPATCHER_TIMEOUT = 30000;
     public static final int DISPATCHER_QUEUE_SIZE = 32;
-    private EmberDevice zdo;
-    private EmberNetworkManager nwkMgr;
-    private ZDPContext zdpContext;
-    private DiscoveryDispatcher dispatcher;
+    private final ZigBeeDevice zdo;
+    private final NetworkManager nwkMgr;
+    private final DiscoveryDispatcher dispatcher;
     private final Object listenerLock = new Object();
-    private ArrayList listenerList = new ArrayList();
+    private final ArrayList listenerList = new ArrayList();
     
-    protected EmberDiscovery(EmberDevice zdo, EmberNetworkManager nwkMgr, ZDPContext zdpContext) {
+    protected DiscoveryService(ZigBeeDevice zdo, NetworkManager nwkMgr, ZDPContext zdpContext) {
         this.zdo = zdo;
         this.nwkMgr = nwkMgr;
-        this.zdpContext = zdpContext;
-        dispatcher = new DiscoveryDispatcher();
-        zdpContext.registerZDPServerService(this);
+        dispatcher = new DiscoveryDispatcher(zdpContext);
     }
 
     public boolean activate() {
@@ -89,7 +89,10 @@ public class EmberDiscovery implements ZDPService, Service {
      */
     protected static boolean isMatch(MatchDescReq matchDescReq, ZigBeeSimpleDescriptor simpleDescriptor) {
         if (matchDescReq.getProfileID() != simpleDescriptor.getApplicationProfileIdentifier()) {
-            // ProfileID dose not match.
+            // TODO: Check if the id matches wildcard=0xffff
+            ZDPContext.debug("[Match] Profile does not match: req="
+                    + ByteUtil.toHexString(matchDescReq.getProfileID())
+                    + " vs target=" + ByteUtil.toHexString(simpleDescriptor.getApplicationProfileIdentifier()));
             return false;
         }
         int matchNumIn = matchDescReq.getInClusterList().length;
@@ -97,6 +100,7 @@ public class EmberDiscovery implements ZDPService, Service {
         if (matchNumIn == 0 && matchNumOut == 0) {
             // No Input/Output clusters are provided.
             // As described in 2.5.2.2, in this case we consider as matched.
+            ZDPContext.debug("[Match] No in/out clusters are specified");
             return true;
         }
         
@@ -107,6 +111,7 @@ public class EmberDiscovery implements ZDPService, Service {
                 for (int a = 0; a < appNumIn; a++) {
                     short appCluster = simpleDescriptor.getApplicationInputClusterList()[a];
                     if (matchCluster == appCluster) {
+                        ZDPContext.debug("[Match] Input cluster is matched: cluster=" + ByteUtil.toHexString(appCluster));
                         return true;
                     }
                 }
@@ -119,12 +124,14 @@ public class EmberDiscovery implements ZDPService, Service {
                 for (int a = 0; a < appNumOut; a++) {
                     short appCluster = simpleDescriptor.getApplicationOutputClusterList()[a];
                     if (matchCluster == appCluster) {
+                        ZDPContext.debug("[Match] Output cluster is matched cluster=" + ByteUtil.toHexString(appCluster));
                         return true;
                     }
                 }
             }
         }
         
+        ZDPContext.debug("[Match] No match");
         return false;
     }
 
@@ -142,10 +149,6 @@ public class EmberDiscovery implements ZDPService, Service {
         case ZDPCommand.ZDP_DEVICE_ANNCE:
             DeviceAnnounce deviceAnnounce = new DeviceAnnounce();
             deviceAnnounce.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
-            nwkMgr.updateAddressMap(
-                    deviceAnnounce.getAddr64(),
-                    deviceAnnounce.getAddr16(),
-                    (deviceAnnounce.getCapability() & 0x08) == 0);
             synchronized (listenerLock) {
                 // We actually indicate to listeners 'synchronous'
                 // All listeners should NOT block at the methods.
@@ -157,16 +160,36 @@ public class EmberDiscovery implements ZDPService, Service {
                 }
             }
             return true;
+        case ZDPCommand.ZDP_MATCH_DESC_RSP:
+            MatchDescRsp matchDescRsp = new MatchDescRsp();
+            matchDescRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
+            if (matchDescRsp.getStatus() == ZDPCommand.STATUS_SUCCESS) {
+                synchronized (listenerLock) {
+                    // We actually indicate to listeners 'synchronous'
+                    // All listeners should NOT block at the methods.
+                    for (int i = 0; i < listenerList.size(); i++) {
+                        ((DiscoveryListener) listenerList.get(i)).deviceMatched(
+                                zdpCommand.getTsn(),
+                                matchDescRsp.getNetworkAddr(),
+                                matchDescRsp.getMatchList());
+                    }
+                }
+            }
+            return true;
         case ZDPCommand.ZDP_NWK_ADDR_RSP:
         case ZDPCommand.ZDP_IEEE_ADDR_RSP:
             AddrRsp addrRsp = new AddrRsp();
             addrRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
-            nwkMgr.updateAddressMap(addrRsp.getIEEEAddress(), addrRsp.getNetworkAddress(), false);
-            return true;
-        case ZDPCommand.ZDP_MATCH_DESC_RSP:
-            MatchDescRsp matchDescRsp = new MatchDescRsp();
-            matchDescRsp.drain(ZDPCommandPacket.toFrameBuffer(zdpCommand));
-            // TODO:
+            if (addrRsp.getStatus() == ZDPCommand.STATUS_SUCCESS) {
+                synchronized (listenerLock) {
+                    // We actually indicate to listeners 'synchronous'
+                    // All listeners should NOT block at the methods.
+                    for (int i = 0; i < listenerList.size(); i++) {
+                        ((DiscoveryListener) listenerList.get(i)).deviceDiscovered(
+                                addrRsp.getIEEEAddress(), addrRsp.getNetworkAddress());
+                    }
+                }
+            }
             return true;
         }
         return false;
@@ -199,13 +222,13 @@ public class EmberDiscovery implements ZDPService, Service {
         
         if (!nwkAddr.equals(localAddr)) {
             switch (localNodeType) {
-            case EmberNetworkManager.TYPE_END_DEVICE: {
+            case NetworkManager.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 simpleDescRsp.setStatus(ZDPCommand.STATUS_INV_REQUESTTYPE);
                 return simpleDescRsp;
             }
-            case EmberNetworkManager.TYPE_COORDINATOR:
-            case EmberNetworkManager.TYPE_ROUTER: {
+            case NetworkManager.TYPE_COORDINATOR:
+            case NetworkManager.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound) {
@@ -237,13 +260,13 @@ public class EmberDiscovery implements ZDPService, Service {
         
         if (!nwkAddr.equals(localAddr)) {
             switch (localNodeType) {
-            case EmberNetworkManager.TYPE_END_DEVICE: {
+            case NetworkManager.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 activeEpRsp.setStatus(ZDPCommand.STATUS_INV_REQUESTTYPE);
                 return activeEpRsp;
             }
-            case EmberNetworkManager.TYPE_COORDINATOR:
-            case EmberNetworkManager.TYPE_ROUTER: {
+            case NetworkManager.TYPE_COORDINATOR:
+            case NetworkManager.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound) {
@@ -263,6 +286,7 @@ public class EmberDiscovery implements ZDPService, Service {
         int matchLength = 0;
         for (int i = 0; i < endpoints.length; i++) {
             int endpoint = endpoints[i];
+            ZDPContext.debug("[Match] Applying criteria on endpoint " + endpoint);
             if (isMatch(matchDescReq, zdo.getSimpleDescriptor(endpoint))) {
                 matchList[matchLength++] = endpoint;
             }
@@ -280,6 +304,7 @@ public class EmberDiscovery implements ZDPService, Service {
         // Apply the match criterion to local simple descriptors,
         // if the NwkAddrOf interest equals to local address or is broadcast.
         if (nwkAddr.equals(localAddr) || nwkAddr.isBroadcast()) {
+            ZDPContext.debug("[Match] Applying criteria on local device");
             int[] endpoints = zdo.getActiveEndpoints();
             int[] matchList = new int[endpoints.length];
             int matchLength = isMatch(matchDescReq, endpoints, matchList);
@@ -294,7 +319,7 @@ public class EmberDiscovery implements ZDPService, Service {
         // Apply the match criterion to children simple descriptors,
         if (!nwkAddr.equals(localAddr) || nwkAddr.isBroadcast()) {
             switch (localNodeType) {
-            case EmberNetworkManager.TYPE_END_DEVICE: {
+            case NetworkManager.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 MatchDescRsp match = new MatchDescRsp();
                 match.setNetworkAddr(nwkAddr);
@@ -303,8 +328,8 @@ public class EmberDiscovery implements ZDPService, Service {
                 matchedList.add(match);
                 break;
             }
-            case EmberNetworkManager.TYPE_COORDINATOR:
-            case EmberNetworkManager.TYPE_ROUTER: {
+            case NetworkManager.TYPE_COORDINATOR:
+            case NetworkManager.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound && !nwkAddr.isBroadcast()) {
@@ -326,10 +351,12 @@ public class EmberDiscovery implements ZDPService, Service {
     
     private class DiscoveryDispatcher extends ServiceTask {
         
-        private ArrayFifoQueue indicationQueue = new ArrayFifoQueue(DISPATCHER_QUEUE_SIZE);
+        private final ArrayFifoQueue indicationQueue = new ArrayFifoQueue(DISPATCHER_QUEUE_SIZE);
+        private final ZDPContext zdpContext;
         
-        public DiscoveryDispatcher() {
-            super("ZNet ZDODiscovery Dispatcher Thread");
+        public DiscoveryDispatcher(ZDPContext zdpContext) {
+            super("ZDP ZDODiscovery Dispatcher Thread");
+            this.zdpContext = zdpContext;
         }
         
         protected void taskLoop() {
@@ -337,11 +364,11 @@ public class EmberDiscovery implements ZDPService, Service {
             if (command == null) {
                 return;
             }
+            ZDPContext.debug("ZDODiscovery command dispatch");
             ZDPCommandPacket commandPacket = (ZDPCommandPacket) command;
             try {
                 switch (commandPacket.getClusterId()) {
                 case ZDPCommand.ZDP_SIMPLE_DESC_REQ:
-                    EmberDevice.debug("Process Simple_Desc_req");
                     SimpleDescReq simpleDescReq = new SimpleDescReq();
                     simpleDescReq.drain(ZDPCommandPacket.toFrameBuffer(commandPacket));
                     SimpleDescRsp simpleDescRsp = doSimpleDescResponse(simpleDescReq);
@@ -354,7 +381,6 @@ public class EmberDiscovery implements ZDPService, Service {
                                 commandPacket.getTsn());
                     }
                 case ZDPCommand.ZDP_ACTIVE_EP_REQ:
-                    EmberDevice.debug("Process Active_EP_req");
                     DescReq activeEpReq = new DescReq();
                     activeEpReq.drain(ZDPCommandPacket.toFrameBuffer(commandPacket));
                     ActiveEpRsp activeEpRsp = doActiveEpResponse(activeEpReq);
@@ -368,7 +394,6 @@ public class EmberDiscovery implements ZDPService, Service {
                     }
                     break;
                 case ZDPCommand.ZDP_MATCH_DESC_REQ:
-                    EmberDevice.debug("Process Match_req");
                     MatchDescReq matchDescReq = new MatchDescReq();
                     matchDescReq.drain(ZDPCommandPacket.toFrameBuffer(commandPacket));
                     List matchedList = doMatchDescResponse(matchDescReq);
@@ -386,13 +411,13 @@ public class EmberDiscovery implements ZDPService, Service {
                     break;
                 }
             } catch (Exception ex) {
-                EmberDevice.warn("Failed to response: " + ex);
+                ZDPContext.warn("Failed to response: " + ex);
             }
         }
         
         public void dispatchCommand(ZDPCommandPacket command) {
             if (!indicationQueue.enqueue(command)) {
-                EmberDevice.warn("IndicationDispatcher queue is full!");
+                ZDPContext.warn("IndicationDispatcher queue is full!");
             }
         }
     }

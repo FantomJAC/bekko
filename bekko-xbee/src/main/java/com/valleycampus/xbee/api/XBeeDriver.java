@@ -210,7 +210,7 @@ public class XBeeDriver implements XBeeAPI {
                         writeBuffer.getOffset() + 3, length);
                 writeBuffer.put(cs);
                 debug("Write reqest");
-                trace(writeBuffer.getRawArray(), writeBuffer.getOffset(), length, false);
+                trace(writeBuffer.getRawArray(), writeBuffer.getOffset(), writeBuffer.getPosition(), false);
                 os.write(writeBuffer.getRawArray(),
                         writeBuffer.getOffset(),
                         writeBuffer.getPosition());

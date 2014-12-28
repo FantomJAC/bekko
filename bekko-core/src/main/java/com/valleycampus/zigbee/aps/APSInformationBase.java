@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Valley Campus Japan, Inc.
+ * Copyright (C) 2014 Valley Campus Japan, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.valleycampus.ember.shared;
+package com.valleycampus.zigbee.aps;
 
 import com.valleycampus.zigbee.IEEEAddress;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.util.Hashtable;
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public final class EmberManagementEntity {
+public final class APSInformationBase {
     
     public static final byte APS_BINDING_TABLE = (byte) 0xc1;
     public static final byte APS_DESIGNATED_COORDINATOR = (byte) 0xc2;
@@ -44,7 +44,7 @@ public final class EmberManagementEntity {
     
     private Hashtable stdIBTable;
     
-    public EmberManagementEntity() {
+    public APSInformationBase() {
         stdIBTable = new Hashtable();
         initialize();
     }

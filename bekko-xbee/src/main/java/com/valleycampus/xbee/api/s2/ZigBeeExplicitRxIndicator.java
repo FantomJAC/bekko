@@ -24,10 +24,10 @@ import com.valleycampus.zigbee.io.FrameBuffer;
  */
 public class ZigBeeExplicitRxIndicator extends XBeeAddressingIndicator {
 
-    static final byte ACK = 0x01;
-    static final byte BROAD_CAST_PACKET = 0x02;
-    static final byte ENCRYPTED_APS_ENCRYPTION = 0x03;
-    static final byte SENT_FROM_ENDDEVICE = 0x04;
+    public static final byte ACK = 0x01;
+    public static final byte BROADCAST_PACKET = 0x02;
+    public static final byte ENCRYPTED_APS_ENCRYPTION = 0x03;
+    public static final byte SENT_FROM_ENDDEVICE = 0x04;
     private int sourceEndpoint;
     private int destinationEndpoint;
     private short clusterId;
