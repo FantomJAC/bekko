@@ -107,11 +107,11 @@ public class XBeeDevice extends AddressTableDevice {
         return xbIO;
     }
     
-    protected APSInformationBase getManagementEntity() {
+    public APSInformationBase getManagementEntity() {
         return managementEntity;
     }
     
-    protected XBeeSecurityManager getSecurityManager() {
+    public XBeeSecurityManager getSecurityManager() {
         return securityManager;
     }
 
