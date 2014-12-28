@@ -96,7 +96,7 @@ public class XBeeNetworkManager implements NetworkManager, AddressTable {
     }
 
     public void leaveNetwork() throws IOException {
-        throw new UnsupportedOperationException("Not supported on XBee.");
+        xbIO.write0("DA");
     }
     
     public IEEEAddress getIEEEAddress() {
