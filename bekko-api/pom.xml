@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.valleycampus.bekko</groupId>
         <artifactId>bekko</artifactId>
-        <version>14.6</version>
+        <version>14.12-SNAPSHOT</version>
     </parent>
     <artifactId>bekko-api</artifactId>
     <version>1.1</version>
