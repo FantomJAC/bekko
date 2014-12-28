@@ -91,6 +91,10 @@ public class XBeeIO {
         writeMulti8(cmd, new byte[] {(byte) dat});
     }
     
+    public void write0(String cmd) throws IOException {
+        writeMulti8(cmd, null);
+    }
+    
     public void writeMulti8(String cmd, byte[] value) throws IOException {
         ATCommand at = new ATCommand(cmd);
         if (isQueueing()) {
