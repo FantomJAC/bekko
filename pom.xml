@@ -8,7 +8,6 @@
     <modules>
         <module>bekko-api</module>
         <module>bekko-core</module>
-        <module>bekko-ember-shared</module>
         <module>bekko-util</module>
         <module>bekko-xbee</module>
         <module>bekko-zcl</module>
