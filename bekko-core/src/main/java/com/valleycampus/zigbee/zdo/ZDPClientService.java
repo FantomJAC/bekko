@@ -74,7 +74,7 @@ public class ZDPClientService {
     }
     
     protected ZDPCommandPacket sendZDPCommand(ZigBeeAddress address, short clusterId, ZDPCommand command) throws IOException {
-        ZDPCommandPacket result = zdo.sendZDPCommand(address, clusterId, command, txOptions, radius, timeout);
+        ZDPCommandPacket result = zdo.sendZDPCommandAndWait(address, clusterId, command, txOptions, radius, timeout);
         if (result == null) {
             throw new IOException("ZDP Client Timeout");
         }
@@ -89,8 +89,9 @@ public class ZDPClientService {
      * ZDP End_Device_Bind_req
      * @param coordinator request destination.
      * @param bindingTarget null if binding target is local device, otherwise primary binding cache device.
-     * @param appContext Application wishes to be unbound.
+     * @param endpoint Application wishes to be unbound.
      * @return Confirmed status.
+     * @throws java.io.IOException
      */
     public byte zdpEndDeviceBindRequest(ZigBeeAddress coordinator,
                                         NetworkAddress bindingTarget,
@@ -98,7 +99,7 @@ public class ZDPClientService {
                                  throws IOException {
         EndDeviceBindReq endDeviceBindReq = new EndDeviceBindReq();
         if (bindingTarget == null) {
-            NetworkAddress local = zdo.getNetworkManager().getNetworkAddress();
+            NetworkAddress local = (NetworkAddress) zdo.getNetworkManager().get(NetworkManager.NWK_NETWORK_ADDRESS);
             endDeviceBindReq.setBindingTarget(local);
         } else {
             endDeviceBindReq.setBindingTarget(bindingTarget);
@@ -131,6 +132,7 @@ public class ZDPClientService {
      * @param dstAddress
      * @param dstEndpoint
      * @return Confirmed status.
+     * @throws java.io.IOException
      */
     public byte zdpBindRequest(ZigBeeAddress bindingTarget,
                                IEEEAddress srcAddress,
@@ -151,6 +153,7 @@ public class ZDPClientService {
      * @param dstAddress
      * @param dstEndpoint
      * @return Confirmed status.
+     * @throws java.io.IOException
      */
     public byte zdpUnbindRequest(ZigBeeAddress bindingTarget,
                                  IEEEAddress srcAddress,

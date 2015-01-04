@@ -20,6 +20,7 @@ import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
+import com.valleycampus.zigbee.aps.ManagementService;
 import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.zdo.CommissioningManager;
 import com.valleycampus.zigbee.zdp.AbstractZigBeeDevice;
@@ -36,7 +37,7 @@ public class DigiMeshDevice extends AbstractZigBeeDevice {
     private IEEEAddress ieeeAddress = null;
     
     protected DigiMeshDevice(XBeeIO xbIO, DigiMeshNetworkManager nwkMgr, DigiMeshDataService dataService) {
-        super(nwkMgr, dataService);
+        super(nwkMgr, dataService, null);
         this.xbIO = xbIO;
         this.commissioningManager = new DigiMeshCommissioningManager(xbIO);
     }
@@ -47,8 +48,8 @@ public class DigiMeshDevice extends AbstractZigBeeDevice {
         return new DigiMeshDevice(xbIO, nwkMgr, new DigiMeshDataService(xbAPI));
     }
     
-    public byte getNetworkStatus() {
-        return 0;
+    public int getNodeType() throws IOException {
+        return TYPE_ROUTER;
     }
 
     public CommissioningManager getCommissioningManager() {
@@ -70,11 +71,7 @@ public class DigiMeshDevice extends AbstractZigBeeDevice {
         return ieeeAddress;
     }
 
-    public NetworkAddress lookupNodeIdByEui64(IEEEAddress eui64) throws IOException {
-        return NetworkAddress.BROADCAST_MROWI;
-    }
-
-    public IEEEAddress lookupEui64ByNodeId(NetworkAddress nodeId) throws IOException {
-        throw new IOException("Unsupported on the DigiMesh device.");
+    public ManagementService getManagementService() {
+        return null;
     }
 }

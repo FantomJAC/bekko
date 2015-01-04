@@ -16,7 +16,6 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.ZigBeeAddress;
 
 /**
@@ -25,15 +24,22 @@ import com.valleycampus.zigbee.ZigBeeAddress;
  */
 public class BindInfo {
     
-    private IEEEAddress sourceAddress;
     private int sourceEndpoint;
     private int clusterID;
     private ZigBeeAddress destinationAddress;
     private int destinationEndpoint;
     
+    public BindInfo() { }
+    
+    public BindInfo(int sourceEndpoint, short clusterID, ZigBeeAddress destinationAddress, int destinationEndpoint) {
+        this.sourceEndpoint = sourceEndpoint;
+        this.clusterID = clusterID;
+        this.destinationAddress = destinationAddress;
+        this.destinationEndpoint = destinationEndpoint;
+    }
+    
     public boolean isValid() {
-        return (sourceAddress != null) &&
-               (0x01 <= sourceEndpoint && sourceEndpoint <= 0xF0) &&
+        return (0x01 <= sourceEndpoint && sourceEndpoint <= 0xF0) &&
                (0x0000 <= clusterID && clusterID <= 0xFFFF) &&
                (destinationAddress != null) &&
                ((0x01 <= destinationEndpoint && destinationEndpoint <= 0xF0)
@@ -42,7 +48,6 @@ public class BindInfo {
 
     public int hashCode() {
         int hash = 7;
-        hash = 17 * hash + (this.sourceAddress != null ? this.sourceAddress.hashCode() : 0);
         hash = 17 * hash + this.sourceEndpoint;
         hash = 17 * hash + this.clusterID;
         hash = 17 * hash + (this.destinationAddress != null ? this.destinationAddress.hashCode() : 0);
@@ -53,27 +58,12 @@ public class BindInfo {
     public boolean equals(Object o) {
         if (o instanceof BindInfo) {
             BindInfo info = (BindInfo) o;
-            return sourceAddress.equals(info.sourceAddress) &&
-                   sourceEndpoint == info.sourceEndpoint &&
+            return sourceEndpoint == info.sourceEndpoint &&
                    clusterID == info.clusterID &&
                    destinationAddress.equals(info.destinationAddress) &&
                    destinationEndpoint == info.destinationEndpoint;
         }
         return false;
-    }
-
-    /**
-     * @return the sourceAddress
-     */
-    public IEEEAddress getSourceAddress() {
-        return sourceAddress;
-    }
-
-    /**
-     * @param sourceAddress the sourceAddress to set
-     */
-    public void setSourceAddress(IEEEAddress sourceAddress) {
-        this.sourceAddress = sourceAddress;
     }
 
     /**

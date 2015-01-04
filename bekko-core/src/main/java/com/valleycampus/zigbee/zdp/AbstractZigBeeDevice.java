@@ -20,6 +20,7 @@ import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.ZigBeeConst;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
 import com.valleycampus.zigbee.aps.DataService;
+import com.valleycampus.zigbee.aps.ManagementService;
 import com.valleycampus.zigbee.io.Frame;
 import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import com.valleycampus.zigbee.zdo.NetworkManager;
@@ -40,14 +41,16 @@ public abstract class AbstractZigBeeDevice implements ZigBeeDevice {
 	private static final int MIN_ENDPOINT = 0x01;
 	private final NetworkManager nwkMgr;
 	private final DataService dataService;
+    private final ManagementService mgmtService;
 	private final DiscoveryService discovery;
 	private final ZDPContext zdpContext;
 	private final HashMap endpointMap;
 	private final Object endpointLock = new Object();
 
-	protected AbstractZigBeeDevice(NetworkManager nwkMgr, DataService dataService) {
+	protected AbstractZigBeeDevice(NetworkManager nwkMgr, DataService dataService, ManagementService mgmtService) {
 		this.nwkMgr = nwkMgr;
 		this.dataService = dataService;
+        this.mgmtService = mgmtService;
 
 		zdpContext = new ZDPContext(dataService);
         dataService.addDataReceiver(zdpContext);
@@ -74,6 +77,10 @@ public abstract class AbstractZigBeeDevice implements ZigBeeDevice {
 		return dataService;
 	}
 
+    public ManagementService getManagementService() {
+        return mgmtService;
+    }
+    
 	public int addEndpoint(ZigBeeSimpleDescriptor simpleDescriptor) {
 		if (simpleDescriptor == null) {
 			throw new IllegalArgumentException("SimpleDescriptor cannot be null");

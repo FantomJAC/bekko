@@ -197,8 +197,8 @@ public class DiscoveryService implements ZDPService, Service {
     
     private SimpleDescRsp doSimpleDescResponse(SimpleDescReq simpleDescReq) throws IOException {
         NetworkAddress nwkAddr = simpleDescReq.getNetworkAddr();
-        int localNodeType = nwkMgr.getNodeType();
-        NetworkAddress localAddr = nwkMgr.getNetworkAddress();
+        int localNodeType = zdo.getNodeType();
+        NetworkAddress localAddr = (NetworkAddress) nwkMgr.get(NetworkManager.NWK_NETWORK_ADDRESS);
         
         SimpleDescRsp simpleDescRsp = new SimpleDescRsp();
         simpleDescRsp.setNetworkAddr(nwkAddr);
@@ -222,13 +222,13 @@ public class DiscoveryService implements ZDPService, Service {
         
         if (!nwkAddr.equals(localAddr)) {
             switch (localNodeType) {
-            case NetworkManager.TYPE_END_DEVICE: {
+            case ZigBeeDevice.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 simpleDescRsp.setStatus(ZDPCommand.STATUS_INV_REQUESTTYPE);
                 return simpleDescRsp;
             }
-            case NetworkManager.TYPE_COORDINATOR:
-            case NetworkManager.TYPE_ROUTER: {
+            case ZigBeeDevice.TYPE_COORDINATOR:
+            case ZigBeeDevice.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound) {
@@ -246,8 +246,8 @@ public class DiscoveryService implements ZDPService, Service {
     
     private ActiveEpRsp doActiveEpResponse(DescReq activeEpReq) throws IOException {
         NetworkAddress nwkAddr = activeEpReq.getNetworkAddr();
-        int localNodeType = nwkMgr.getNodeType();
-        NetworkAddress localAddr = nwkMgr.getNetworkAddress();
+        int localNodeType = zdo.getNodeType();
+        NetworkAddress localAddr = (NetworkAddress) nwkMgr.get(NetworkManager.NWK_NETWORK_ADDRESS);
         
         ActiveEpRsp activeEpRsp = new ActiveEpRsp();
         activeEpRsp.setNetworkAddr(nwkAddr);
@@ -260,13 +260,13 @@ public class DiscoveryService implements ZDPService, Service {
         
         if (!nwkAddr.equals(localAddr)) {
             switch (localNodeType) {
-            case NetworkManager.TYPE_END_DEVICE: {
+            case ZigBeeDevice.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 activeEpRsp.setStatus(ZDPCommand.STATUS_INV_REQUESTTYPE);
                 return activeEpRsp;
             }
-            case NetworkManager.TYPE_COORDINATOR:
-            case NetworkManager.TYPE_ROUTER: {
+            case ZigBeeDevice.TYPE_COORDINATOR:
+            case ZigBeeDevice.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound) {
@@ -298,8 +298,8 @@ public class DiscoveryService implements ZDPService, Service {
         ArrayList matchedList = new ArrayList();
         
         NetworkAddress nwkAddr = matchDescReq.getNetworkAddr();
-        int localNodeType = nwkMgr.getNodeType();
-        NetworkAddress localAddr = nwkMgr.getNetworkAddress();
+        int localNodeType = zdo.getNodeType();
+        NetworkAddress localAddr = (NetworkAddress) nwkMgr.get(NetworkManager.NWK_NETWORK_ADDRESS);
 
         // Apply the match criterion to local simple descriptors,
         // if the NwkAddrOf interest equals to local address or is broadcast.
@@ -319,7 +319,7 @@ public class DiscoveryService implements ZDPService, Service {
         // Apply the match criterion to children simple descriptors,
         if (!nwkAddr.equals(localAddr) || nwkAddr.isBroadcast()) {
             switch (localNodeType) {
-            case NetworkManager.TYPE_END_DEVICE: {
+            case ZigBeeDevice.TYPE_END_DEVICE: {
                 // EndDevice cannot have children.
                 MatchDescRsp match = new MatchDescRsp();
                 match.setNetworkAddr(nwkAddr);
@@ -328,8 +328,8 @@ public class DiscoveryService implements ZDPService, Service {
                 matchedList.add(match);
                 break;
             }
-            case NetworkManager.TYPE_COORDINATOR:
-            case NetworkManager.TYPE_ROUTER: {
+            case ZigBeeDevice.TYPE_COORDINATOR:
+            case ZigBeeDevice.TYPE_ROUTER: {
                 // TODO: Search for children...
                 boolean deviceNotFound = true;
                 if (deviceNotFound && !nwkAddr.isBroadcast()) {

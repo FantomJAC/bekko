@@ -19,9 +19,7 @@ package com.valleycampus.xbee;
 import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
-import com.valleycampus.zigbee.aps.APSInformationBase;
-import com.valleycampus.zigbee.zdo.CommissioningManager;
-import com.valleycampus.zigbee.zdp.AddressTableDevice;
+import com.valleycampus.zigbee.zdp.AbstractZigBeeDevice;
 import java.io.IOException;
 import java.io.PrintStream;
 
@@ -29,7 +27,7 @@ import java.io.PrintStream;
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class XBeeDevice extends AddressTableDevice {
+public class XBeeDevice extends AbstractZigBeeDevice {
     
     public static final String PORT_NAME = "com.valleycampus.xbee.comPort";
     public static final String DEBUG_ZNET = "com.valleycampus.xbee.debug.znet";
@@ -43,9 +41,7 @@ public class XBeeDevice extends AddressTableDevice {
     public static final String NAME_XBEE_S2C_PRO = "XBee-PRO(S2C)";
 
     private final XBeeIO xbIO;
-    private final APSInformationBase managementEntity;
     private final XBeeSecurityManager securityManager;
-    private XBeeCommissioningManager commissioningManager;
 
     private static PrintStream logStream = System.out;
     private static volatile boolean debugEnabled;
@@ -54,11 +50,11 @@ public class XBeeDevice extends AddressTableDevice {
             XBeeIO xbIO,
             XBeeNetworkManager nwkMgr,
             XBeeDataService dataService,
-            XBeeSecurityManager securityMgr) {
-        super(nwkMgr, dataService, nwkMgr);
+            XBeeManagementService mgmtService,
+            XBeeSecurityManager securityManager) {
+        super(nwkMgr, dataService, mgmtService);
         this.xbIO = xbIO;
-        this.securityManager = securityMgr;
-        this.managementEntity = new APSInformationBase();
+        this.securityManager = securityManager;
     }
     
     public static void setLogStream(PrintStream logStream) {
@@ -85,6 +81,9 @@ public class XBeeDevice extends AddressTableDevice {
         int vr = xbIO.read16("VR");
         String fwVersion = Integer.toHexString(vr);
         XBeeDevice.debug("FWVersion: " + fwVersion);
+        
+        // Enable ZDO passthrough
+        xbIO.write8("AO", 3);
 
         XBeeSecurityManager securityManager;
         if ((vr & XBeeAPI.VR_FIRM_MASK) == XBeeAPI.VR_SE) {
@@ -94,21 +93,18 @@ public class XBeeDevice extends AddressTableDevice {
         }
         
         XBeeNetworkManager nwkMgr = new XBeeNetworkManager(xbIO);
-        XBeeDevice device = new XBeeDevice(xbIO, nwkMgr, new XBeeDataService(nwkMgr, new XBeeBindingManager(), xbAPI), securityManager);
+        XBeeBindingManager bindingManager = new XBeeBindingManager();
         
-        if ((vr & XBeeAPI.VR_TYPE_MASK) == XBeeAPI.VR_COORDINATOR) {
-            device.getManagementEntity().setAIB(APSInformationBase.APS_TRUST_CENTER_ADDRESS, device.getIEEEAddress());
-        }
+        XBeeDataService dataService = new XBeeDataService(nwkMgr, bindingManager, xbAPI);
+        XBeeManagementService mgmtService = new XBeeManagementService(xbIO, bindingManager);
+        
+        XBeeDevice device = new XBeeDevice(xbIO, nwkMgr, dataService, mgmtService, securityManager);
         
         return device;
     }
 
     public XBeeIO getXBeeIO() {
         return xbIO;
-    }
-    
-    public APSInformationBase getManagementEntity() {
-        return managementEntity;
     }
     
     public XBeeSecurityManager getSecurityManager() {
@@ -148,18 +144,22 @@ public class XBeeDevice extends AddressTableDevice {
         return getHWVersion() + " - " + getFWVersion();
     }
 
-    public byte getNetworkStatus() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public CommissioningManager getCommissioningManager() {
-        if (commissioningManager == null) {
-            commissioningManager = new XBeeCommissioningManager(this, managementEntity);
-        }
-        return commissioningManager;
-    }
-
     public IEEEAddress getIEEEAddress() {
         return ((XBeeNetworkManager) getNetworkManager()).getIEEEAddress();
+    }
+    
+    public int getNodeType() throws IOException {
+        int vr = xbIO.read16("VR");
+        int type = (vr & XBeeAPI.VR_TYPE_MASK);
+        switch (type) {
+        case XBeeAPI.VR_COORDINATOR:
+            return TYPE_COORDINATOR;
+        case XBeeAPI.VR_ROUTER:
+            return TYPE_ROUTER;
+        case XBeeAPI.VR_END_DEVICE:
+            return TYPE_END_DEVICE;
+        default:
+            return -1;
+        }
     }
 }

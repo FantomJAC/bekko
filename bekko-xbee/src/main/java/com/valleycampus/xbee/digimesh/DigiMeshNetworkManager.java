@@ -38,28 +38,12 @@ public class DigiMeshNetworkManager implements NetworkManager {
     public void aggregateRouteRequest(IEEEAddress address) throws IOException {
         xbIO.write64("AG", address.toLong());
     }
-
-    public NetworkAddress getNetworkAddress() throws IOException {
-        return NetworkAddress.BROADCAST_MROWI;
-    }
-
-    public int getNodeType() throws IOException {
-        return TYPE_ROUTER;
-    }
-
-    public void permitJoin(int i) throws IOException {
-        throw new IOException("Unsupported on the DigiMesh device.");
-    }
-
-    public List energyScan(int i, int i1) throws IOException {
-        throw new IOException("Unsupported on the DigiMesh device.");
+    
+    public byte getNetworkStatus() {
+        return 0;
     }
 
     public List networkDiscovery(int i, int i1) throws IOException {
-        throw new IOException("Unsupported on the DigiMesh device.");
-    }
-
-    public void formNetwork(long l, int i, int i1) throws IOException {
         throw new IOException("Unsupported on the DigiMesh device.");
     }
 
@@ -67,4 +51,16 @@ public class DigiMeshNetworkManager implements NetworkManager {
         throw new IOException("Unsupported on the DigiMesh device.");
     }
 
+    public Object get(byte attribute) throws IOException {
+        switch (attribute) {
+        case NWK_NETWORK_ADDRESS:
+            return NetworkAddress.BROADCAST_MROWI;
+        default:
+            return null;
+        }
+    }
+
+    public boolean set(byte attribute, Object value) throws IOException {
+        return false;
+    }
 }

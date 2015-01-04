@@ -17,13 +17,12 @@
 package com.valleycampus.zigbee.zdo;
 
 import com.valleycampus.zigbee.IEEEAddress;
-import com.valleycampus.zigbee.NetworkAddress;
 import com.valleycampus.zigbee.ZigBeeAddress;
 import com.valleycampus.zigbee.ZigBeeException;
 import com.valleycampus.zigbee.ZigBeeSimpleDescriptor;
 import com.valleycampus.zigbee.aps.DataService;
+import com.valleycampus.zigbee.aps.ManagementService;
 import com.valleycampus.zigbee.io.Frame;
-import com.valleycampus.zigbee.zdp.command.ZDPCommand;
 import java.io.IOException;
 
 /**
@@ -46,6 +45,10 @@ public interface ZigBeeDevice {
     public static final byte STATUS_NOT_PERMITTED = (byte) 0x8b;
     public static final byte STATUS_TABLE_FULL = (byte) 0x8c;
     public static final byte STATUS_NOT_AUTHORIZED = (byte) 0x8d;
+    
+	public static final int TYPE_COORDINATOR = 0x01;
+    public static final int TYPE_ROUTER = 0x02;
+    public static final int TYPE_END_DEVICE = 0x03;
 
     public int addEndpoint(ZigBeeSimpleDescriptor simpleDescriptor) throws IOException;
     
@@ -58,9 +61,7 @@ public interface ZigBeeDevice {
     public void addDiscoveryListener(DiscoveryListener listener);
     
     public boolean removeDiscoveryListener(DiscoveryListener listener);
-    
-    public byte getNetworkStatus();
-    
+
     public int sendZDPCommand(
             ZigBeeAddress address,
             short clusterId,
@@ -76,27 +77,13 @@ public interface ZigBeeDevice {
             int radius,
             long timeout) throws ZigBeeException, IOException;
     
-    /**
-     * @deprecated Use {@link #sendZDPCommandAndWait(com.valleycampus.zigbee.ZigBeeAddress,
-     * short, com.valleycampus.zigbee.io.Frame, int, int, long)} instead.
-     */
-    public ZDPCommandPacket sendZDPCommand(
-            ZigBeeAddress address,
-            short clusterId,
-            ZDPCommand command,
-            int txOptions,
-            int radius,
-            long timeout) throws ZigBeeException, IOException;
-    
-    public CommissioningManager getCommissioningManager();
-    
     public NetworkManager getNetworkManager();
     
     public IEEEAddress getIEEEAddress();
     
-    public NetworkAddress lookupNodeIdByEui64(IEEEAddress eui64) throws IOException;
-    
-    public IEEEAddress lookupEui64ByNodeId(NetworkAddress nodeId) throws IOException;
+    public int getNodeType() throws IOException;
     
     public DataService getDataService();
+    
+    public ManagementService getManagementService();
 }

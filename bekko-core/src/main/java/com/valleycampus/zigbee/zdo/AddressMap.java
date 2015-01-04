@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.valleycampus.zigbee.zdp;
+package com.valleycampus.zigbee.zdo;
 
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
@@ -24,11 +24,9 @@ import java.io.IOException;
  *
  * @author Shotaro Uchida <fantom@xmaker.mx>
  */
-public interface AddressTable {
+public interface AddressMap {
     
     public NetworkAddress lookupNodeIdByEui64(IEEEAddress eui64) throws IOException;
     
     public IEEEAddress lookupEui64ByNodeId(NetworkAddress nodeId) throws IOException;
-    
-    public void update(IEEEAddress senderEUI64, NetworkAddress sender, int capability);
 }

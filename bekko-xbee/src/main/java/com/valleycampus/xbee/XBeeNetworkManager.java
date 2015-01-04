@@ -16,13 +16,13 @@
  */
 package com.valleycampus.xbee;
 
-import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeIO;
 import com.valleycampus.zigbee.IEEEAddress;
 import com.valleycampus.zigbee.NetworkAddress;
 import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.zdo.NetworkManager;
-import com.valleycampus.zigbee.zdp.AddressTable;
+import com.valleycampus.zigbee.zdo.AddressMap;
+import com.valleycampus.zigbee.zdo.DiscoveryListener;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * @author Shotaro Uchida <suchida@valleycampus.com>
  */
-public class XBeeNetworkManager implements NetworkManager, AddressTable {
+public class XBeeNetworkManager implements NetworkManager, AddressMap, DiscoveryListener {
     
     private final Map addressMap;
     private final Object addressLock = new Object();
@@ -46,7 +46,7 @@ public class XBeeNetworkManager implements NetworkManager, AddressTable {
         addressMap = new HashMap();
     }
     
-    public void update(IEEEAddress address64, NetworkAddress address16, int capability) {
+    protected void updateAddressMap(IEEEAddress address64, NetworkAddress address16) {
         synchronized (addressLock) {
             addressMap.put(address64, address16);
         }
@@ -83,15 +83,7 @@ public class XBeeNetworkManager implements NetworkManager, AddressTable {
         xbIO.write8("CB", (byte) 2);
     }
 
-    public List energyScan(int scanChannels, int scanDuration) throws IOException {
-        throw new UnsupportedOperationException("Not supported on XBee.");
-    }
-
     public List networkDiscovery(int scanChannels, int scanDuration) throws IOException {
-        throw new UnsupportedOperationException("Not supported on XBee.");
-    }
-
-    public void formNetwork(long extPanId, int scanChannels, int scanDuration) throws IOException {
         throw new UnsupportedOperationException("Not supported on XBee.");
     }
 
@@ -123,26 +115,40 @@ public class XBeeNetworkManager implements NetworkManager, AddressTable {
         return xbIO.read8("CH");
     }
 
-    public long getCurrentExtendedPANID() throws IOException {
-        return xbIO.read64("OP");
-    }
-
-    public int getCurrentPANID() throws IOException {
-        return xbIO.read16("OI");
-    }
-
-    public int getNodeType() throws IOException {
-        int vr = xbIO.read16("VR");
-        int type = (vr & XBeeAPI.VR_TYPE_MASK);
-        switch (type) {
-        case XBeeAPI.VR_COORDINATOR:
-            return TYPE_COORDINATOR;
-        case XBeeAPI.VR_ROUTER:
-            return TYPE_ROUTER;
-        case XBeeAPI.VR_END_DEVICE:
-            return TYPE_END_DEVICE;
+    public Object get(byte attribute) throws IOException {
+        switch (attribute) {
+        case NWK_NETWORK_ADDRESS:
+            return getNetworkAddress();
+        case NWK_STACK_PROFILE:
+            return Integer.valueOf(xbIO.read8("ZS"));
+        case NWK_EXTENDED_PAN_ID:
+            return Long.valueOf(xbIO.read64("OP"));
+        case NWK_ADDRESS_MAP:
+            return this;
+        case NWK_PAN_ID:
+            return Integer.valueOf(xbIO.read16("OI"));
         default:
-            return -1;
+            return null;
         }
+    }
+
+    public boolean set(byte attribute, Object value) throws IOException {
+        return false;
+    }
+
+    public byte getNetworkStatus() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    public void deviceAnnounce(NetworkAddress nwkAddress, IEEEAddress ieeeAddress, byte capability) {
+        XBeeDevice.debug("Address map updated (DeviceAnnounce): eui64=" + ieeeAddress.toString() + ", nwk=" + nwkAddress.toString());
+        updateAddressMap(ieeeAddress, nwkAddress);
+    }
+
+    public void deviceMatched(int tsn, NetworkAddress nwkAddress, int[] matchList) { }
+
+    public void deviceDiscovered(IEEEAddress ieeeAddress, NetworkAddress nwkAddress) {
+        XBeeDevice.debug("Address map updated (Discovered): eui64=" + ieeeAddress.toString() + ", nwk=" + nwkAddress.toString());
+        updateAddressMap(ieeeAddress, nwkAddress);
     }
 }
