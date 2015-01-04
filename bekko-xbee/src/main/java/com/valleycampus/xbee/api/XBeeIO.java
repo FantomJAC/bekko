@@ -29,13 +29,17 @@ public class XBeeIO {
     
     public static final int DEFAULT_TIMEOUT = 1000;
     
-    private XBeeAPI driver;
+    private final XBeeAPI driver;
     private boolean queueing;
     private int timeout;
     
     public XBeeIO(XBeeAPI driver) {
         this.driver = driver;
         setTimeout(DEFAULT_TIMEOUT);
+    }
+    
+    public XBeeAPI getXBeeAPI() {
+        return driver;
     }
     
     private void checkResponse(ATCommandResponse resp) throws IOException {
