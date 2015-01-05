@@ -16,10 +16,15 @@
  */
 package com.valleycampus.xbee;
 
+import com.valleycampus.xbee.api.RXTXDriverContext;
+import com.valleycampus.xbee.api.XBeeAPI;
 import com.valleycampus.xbee.api.XBeeDriver;
+import com.valleycampus.xbee.api.XBeeIO;
+import com.valleycampus.xbee.digimesh.DigiMeshDevice;
 import com.valleycampus.zigbee.zdo.ZigBeeDevice;
 import java.io.IOException;
 import com.valleycampus.zigbee.apl.BekkoDeviceManager;
+import com.valleycampus.zigbee.zdp.AbstractZigBeeDevice;
 import com.valleycampus.zigbee.zdp.ZDPContext;
 
 /**
@@ -28,9 +33,16 @@ import com.valleycampus.zigbee.zdp.ZDPContext;
  */
 public class XBeeDeviceManager implements BekkoDeviceManager {
 
-    private final DriverManager drvMgr = new DriverManager();
+    private RXTXDriverContext drvCtx;
+    private AbstractZigBeeDevice zdo;
     
     public ZigBeeDevice createSharedZigBeeDevice() throws IOException {
+        synchronized (this) {
+            if (zdo != null) {
+                return zdo;
+            }
+        }
+        
         if (Boolean.getBoolean(XBeeDevice.DEBUG_ZNET)) {
             XBeeDevice.setDebugEnabled(true);
         }
@@ -49,14 +61,48 @@ public class XBeeDeviceManager implements BekkoDeviceManager {
             throw new IOException("Null port name");
         }
         try {
-            return drvMgr.openDriver(portName);
+            RXTXDriverContext ctx = RXTXDriverContext.openDriver(portName);
+            synchronized (this) {
+                drvCtx = ctx;
+                zdo = createZigBeeDevice(drvCtx.getXBeeAPI());
+                zdo.activate();
+            }
+            return zdo;
         } catch (Exception ex) {
             throw new IOException(ex);
         }
     }
 
     public void releaseSharedZigBeeDevice() throws IOException {
-        drvMgr.closeDriver();
+        synchronized (this) {
+            if (zdo != null) {
+                zdo.shutdown();
+                zdo = null;
+                drvCtx.closeDriver();
+            }
+        }
     }
+    
+    private static AbstractZigBeeDevice createZigBeeDevice(XBeeAPI xbAPI) throws IOException {
+        XBeeIO xbIO = new XBeeIO(xbAPI);
+        xbIO.setTimeout(3000);
 
+        int hv = xbIO.read16("HV");
+        switch (hv & XBeeAPI.HV_MASK) {
+        case XBeeAPI.HV_S2:
+        case XBeeAPI.HV_S2_PRO:
+        case XBeeAPI.HV_S2B_PRO:
+        case 0x2100:
+        case 0x2200:
+            XBeeDevice.debug("ZigBee(S2) device is detected.");
+            return XBeeDevice.createXBeeDevice(xbAPI);
+        case 0x2300:
+            XBeeDevice.debug("DigiMesh(S3) device is detected.");
+        case 0x2400:
+            XBeeDevice.debug("DigiMesh(S8) device is detected.");
+            return DigiMeshDevice.createDigiMeshDevice(xbAPI);
+        default:
+            throw new IOException("Module " + Integer.toHexString(hv) + " not support ZigBee");
+        }
+    }
 }
