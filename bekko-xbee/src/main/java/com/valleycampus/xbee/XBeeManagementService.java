@@ -52,7 +52,7 @@ public class XBeeManagementService implements ManagementService {
             return ((xbIO.read16("VR") & XBeeAPI.VR_TYPE_MASK) == XBeeAPI.VR_COORDINATOR) ?
                 Boolean.TRUE : Boolean.FALSE;
         case APS_CHANNEL_MASK:
-            return Integer.valueOf((xbIO.read16("SC") & 0xFFFF) << 11);
+            return Integer.valueOf(xbIO.read16("SC") << 0x0B);
         case APS_USE_EXTENDED_PAN_ID:
             return Long.valueOf(xbIO.read64("ID"));
         }
@@ -62,7 +62,7 @@ public class XBeeManagementService implements ManagementService {
     public boolean set(byte attribute, Object value) throws IOException {
         switch (attribute) {
         case APS_CHANNEL_MASK:
-            xbIO.write16("SC", ((Number) value).shortValue());
+            xbIO.write16("SC", (((Number) value).intValue() >> 0x0B) & 0xFFFF);
             break;
         case APS_USE_EXTENDED_PAN_ID:
             xbIO.write64("ID", ((Number) value).longValue());
