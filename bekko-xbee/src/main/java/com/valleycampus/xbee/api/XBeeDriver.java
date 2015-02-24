@@ -27,6 +27,7 @@ import com.valleycampus.zigbee.io.ByteUtil;
 import com.valleycampus.zigbee.service.ServiceTask;
 import com.valleycampus.zigbee.service.WorkQueue;
 import com.valleycampus.zigbee.util.ArrayFifoQueue;
+import com.valleycampus.zigbee.util.Sequence;
 import com.valleycampus.zigbee.util.SimpleLatch;
 
 /**
@@ -40,7 +41,7 @@ public class XBeeDriver implements XBeeAPI {
     private OutputStream os;
     private FrameBuffer writeBuffer;
     private byte[] readBuffer;
-    private int callback = XBeeRequest.DEFAULT_FRAME_ID;
+    private Sequence sequence;
     private Vector listenerList;
     private SimpleLatch[] respLatch;
     private WorkQueue eventQueue;
@@ -56,6 +57,7 @@ public class XBeeDriver implements XBeeAPI {
         this.os = os;
         writeBuffer = new FrameBuffer(new byte[BUFFER_SIZE]);
         readBuffer = new byte[BUFFER_SIZE];
+        sequence = new Sequence(8);
         listenerList = new Vector();
         respLatch = new SimpleLatch[0xFF];
         for (int i = 0; i < 0xFF; i++) {
@@ -135,10 +137,12 @@ public class XBeeDriver implements XBeeAPI {
     }
 
     private int nextCallback() {
-        if (callback > 255 || callback == 0) {
-            callback = XBeeRequest.DEFAULT_FRAME_ID;
+        int callback = sequence.nextSequence();
+        if (callback == XBeeRequest.NO_RESPONSE_FRAME_ID) {
+            // We need a response, skip this id.
+            callback = sequence.nextSequence();
         }
-        return callback++;
+        return callback;
     }
 
     public void addAPIListener(XBeeAPIListener listener) {
