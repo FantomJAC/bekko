@@ -34,7 +34,7 @@ public class ByteUtil {
     public static final int INT_8_SIZE = 1;
     public static final int BYTE_SIZE = 8;
     
-    private int byteOrder;
+    private final int byteOrder;
     
     private ByteUtil(int byteOrder) {
         this.byteOrder = byteOrder;
@@ -80,7 +80,7 @@ public class ByteUtil {
     public static String toString(byte[] buffer, int off, int len) {
         StringBuffer sb = new StringBuffer();
         for (int i = off; i < off + len; i++) {
-            sb.append(ByteUtil.toHexString(buffer[i]) + " ");
+            sb.append(ByteUtil.toHexString(buffer[i])).append(" ");
         }
         return sb.toString();
     }
@@ -93,95 +93,50 @@ public class ByteUtil {
         }
     }
     
-    public long toInt(byte[] src, int off, int len) {
+    private long toInt(byte[] src, int off, int size, int index) {
         long dest = 0;
-        if (byteOrder == BO_LE) {
-            for (int p = 0; p < len; p++) {
-                long d = src[off + p] & 0xff;
+        for (int p = 0; p < size; p++) {
+            int d = src[off + (p + size * index)] & 0xff;
+            if (byteOrder == BO_LE) {
                 dest |= (d << (BYTE_SIZE * p));
+            } else {
+                dest |= (d << (BYTE_SIZE * (size - 1 - p)));
             }
-        } else {
-            for (int p = 0; p < len; p++) {
-                long d = src[off + p] & 0xff;
-                dest |= (d << (BYTE_SIZE * (len - 1 - p)));
-            } 
         }
         return dest;
     }
     
+    public long toInt(byte[] src, int off, int size) {
+        return toInt(src, off, size, 0);
+    }
+
     public long toInt64(byte[] src, int off) {
-        long dest = 0;
-        if (byteOrder == BO_LE) {
-            for (int p = 0; p < INT_64_SIZE; p++) {
-                long d = src[off + p] & 0xff;
-                dest |= (d << (BYTE_SIZE * p));
-            }
-        } else {
-            for (int p = 0; p < INT_64_SIZE; p++) {
-                long d = src[off + p] & 0xff;
-                dest |= (d << (BYTE_SIZE * (INT_64_SIZE - 1 - p)));
-            } 
-        }
-        return dest;
+        return toInt(src, off, INT_64_SIZE);
     }
     
     public int toInt16(byte[] src, int off) {
-        if (byteOrder == BO_LE) {
-            return  (src[off + 0] & 0xFF) |
-                    (src[off + 1] & 0xFF) << 8;
-        } else {
-            return  (src[off + 0] & 0xFF) << 8 |
-                    (src[off + 1] & 0xFF);
-        }
+        return (int) toInt(src, off, INT_16_SIZE);
     }
     
     public int toInt32(byte[] src, int off) {
-        if (byteOrder == BO_LE) {
-            return  (src[off + 0] & 0xFF)       |
-                    (src[off + 1] & 0xFF) << 8  |
-                    (src[off + 2] & 0xFF) << 16 |
-                    (src[off + 3] & 0xFF) << 24;
-        } else {
-            return  (src[off + 0] & 0xFF) << 24 |
-                    (src[off + 1] & 0xFF) << 16 |
-                    (src[off + 2] & 0xFF) << 8  |
-                    (src[off + 3] & 0xFF);
-        }
+        return (int) toInt(src, off, INT_32_SIZE);
     }
-
+    
     public int[] toInt32Array(byte[] src, int off, int size, int length) {
         int[] dest = new int[length];
-        if (byteOrder == BO_LE) {
-            for (int index = 0; index < length; index++) {
-                dest[index] = 0;
-                for (int p = 0; p < size; p++) {
-                    int d = src[off + (p + size * index)] & 0xff;
-                    dest[index] |= (d << (BYTE_SIZE * p));
-                }
-            }
-        } else {
-            for (int index = 0; index < length; index++) {
-                dest[index] = 0;
-                for (int p = 0; p < size; p++) {
-                    int d = src[off + (p + size * index)] & 0xff;
-                    dest[index] |= (d << (BYTE_SIZE * (size - 1 - p)));
-                }
-            }  
+        for (int index = 0; index < length; index++) {
+            dest[index] = (int) toInt(src, off, size, index);
         }
         return dest;
     }
     
     public byte[] toByteArray(int[] src, int size, int length) {
         byte[] dest = new byte[size * length];
-        if (byteOrder == BO_LE) {
-            for (int index = 0; index < length; index++) {
-                for (int p = 0; p < size; p++) {
+        for (int index = 0; index < length; index++) {
+            for (int p = 0; p < size; p++) {
+                if (byteOrder == BO_LE) {
                     dest[p + size * index] = (byte) ((src[index] >> (BYTE_SIZE * p)) & 0xff);
-                }
-            }
-        } else {
-            for (int index = 0; index < length; index++) {
-                for (int p = 0; p < size; p++) {
+                } else {
                     dest[p + size * index] = (byte) ((src[index] >> (BYTE_SIZE * (size - 1 - p))) & 0xff);
                 }
             }
@@ -190,31 +145,11 @@ public class ByteUtil {
     }
 
     public byte[] toByteArray(int src, int size) {
-        byte[] dest = new byte[size];
-        if (byteOrder == BO_LE) {
-            for (int p = 0; p < size; p++) {
-                dest[p] = (byte) ((src >> (BYTE_SIZE * p)) & 0xff);
-            }
-        } else {
-            for (int p = 0; p < size; p++) {
-                dest[p] = (byte) ((src >> (BYTE_SIZE * (size - 1 - p))) & 0xff);
-            } 
-        }
-        return dest;
+        return toByteArray(new int[] {src}, size, 1);
     }
     
     public byte[] toByteArray(long src, int size) {
-        byte[] dest = new byte[size];
-        if (byteOrder == BO_LE) {
-            for (int p = 0; p < size; p++) {
-                dest[p] = (byte) ((src >> (BYTE_SIZE * p)) & 0xffL);
-            }
-        } else {
-            for (int p = 0; p < size; p++) {
-                dest[p] = (byte) ((src >> (BYTE_SIZE * (size - 1 - p))) & 0xffL);
-            } 
-        }
-        return dest;
+        return toByteArray(new int[] {(int) (src >> 32), (int) src}, size, 2);
     }
     
     public byte[] toByteArray(String src) {
