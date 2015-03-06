@@ -96,7 +96,7 @@ public class ByteUtil {
     private long toInt(byte[] src, int off, int size, int index) {
         long dest = 0;
         for (int p = 0; p < size; p++) {
-            int d = src[off + (p + size * index)] & 0xff;
+            long d = src[off + (p + size * index)] & 0xffL;
             if (byteOrder == BO_LE) {
                 dest |= (d << (BYTE_SIZE * p));
             } else {
