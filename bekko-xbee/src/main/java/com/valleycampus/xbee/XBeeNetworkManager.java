@@ -133,7 +133,14 @@ public class XBeeNetworkManager implements NetworkManager, AddressMap, Discovery
     }
 
     public boolean set(byte attribute, Object value) throws IOException {
-        return false;
+        switch (attribute) {
+        case NWK_STACK_PROFILE:
+            xbIO.write8("ZS", ((Number) value).intValue());
+            break;
+        default:
+            return false;
+        }
+        return true;
     }
 
     public byte getNetworkStatus() {
