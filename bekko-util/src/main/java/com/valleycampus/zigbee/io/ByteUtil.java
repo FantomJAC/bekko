@@ -130,7 +130,7 @@ public class ByteUtil {
         return dest;
     }
     
-    public byte[] toByteArray(int[] src, int size, int length) {
+    public byte[] toByteArray(long[] src, int size, int length) {
         byte[] dest = new byte[size * length];
         for (int index = 0; index < length; index++) {
             for (int p = 0; p < size; p++) {
@@ -145,11 +145,11 @@ public class ByteUtil {
     }
 
     public byte[] toByteArray(int src, int size) {
-        return toByteArray(new int[] {src}, size, 1);
+        return toByteArray(new long[] {src & 0xFFFFFFFFL}, size, 1);
     }
     
     public byte[] toByteArray(long src, int size) {
-        return toByteArray(new int[] {(int) (src >> 32), (int) src}, size, 2);
+		return toByteArray(new long[] {src}, size, 1);
     }
     
     public byte[] toByteArray(String src) {

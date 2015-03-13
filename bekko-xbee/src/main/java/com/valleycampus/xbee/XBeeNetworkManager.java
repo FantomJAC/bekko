@@ -94,9 +94,9 @@ public class XBeeNetworkManager implements NetworkManager, AddressMap, Discovery
     public IEEEAddress getIEEEAddress() {
         if (ieeeAddress == null) {
             try {
-                int[] addr64 = new int[2];
-                addr64[0] = xbIO.read32("SH");
-                addr64[1] = xbIO.read32("SL");
+                long[] addr64 = new long[2];
+                addr64[0] = xbIO.read32("SH") & 0xFFFFFFFFL;
+                addr64[1] = xbIO.read32("SL") & 0xFFFFFFFFL;
                 byte[] ieee = ByteUtil.BIG_ENDIAN.toByteArray(addr64, ByteUtil.INT_32_SIZE, 2);
                 ieeeAddress = IEEEAddress.getByAddress(ieee);
             } catch (IOException ex) {
