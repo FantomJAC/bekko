@@ -62,7 +62,7 @@ public class ByteBuffer extends Buffer {
     }
 
     public ByteBuffer put(byte[] src) {
-        System.arraycopy(src, offset, buffer, offset + getPosition(), src.length);
+        System.arraycopy(src, 0, buffer, offset + getPosition(), src.length);
         skip(src.length);
         return this;
     }
